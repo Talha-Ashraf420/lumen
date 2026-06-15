@@ -45,7 +45,7 @@ export default function SeriesDetailPage() {
       poster={info?.cover}
       title={title}
       fav={fav}
-      onToggleFav={() => toggleFav("series", Number(id))}
+      onToggleFav={() => toggleFav("series", { id: Number(id), name: cleanName(title), poster: info?.cover })}
     >
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{cleanName(title)}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-fog-300">

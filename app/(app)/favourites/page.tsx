@@ -1,33 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
 import { Heart } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { PosterCard } from "@/components/catalog/PosterCard";
-import { useVodStreams, useSeriesList, useLiveStreams } from "@/lib/hooks";
 import { useLibrary } from "@/store/library";
-import { cleanName, yearFrom } from "@/lib/utils";
+import { cleanName } from "@/lib/utils";
 
 export default function FavouritesPage() {
-  const movies = useVodStreams();
-  const series = useSeriesList();
-  const live = useLiveStreams();
   const { favourites } = useLibrary();
-
-  const favMovies = useMemo(
-    () => (movies.data ?? []).filter((m) => favourites.movie.includes(m.stream_id)),
-    [movies.data, favourites.movie],
-  );
-  const favSeries = useMemo(
-    () => (series.data ?? []).filter((s) => favourites.series.includes(s.series_id)),
-    [series.data, favourites.series],
-  );
-  const favLive = useMemo(
-    () => (live.data ?? []).filter((c) => favourites.live.includes(c.stream_id)),
-    [live.data, favourites.live],
-  );
-
-  const empty = favMovies.length + favSeries.length + favLive.length === 0;
+  const empty = favourites.movie.length + favourites.series.length + favourites.live.length === 0;
 
   return (
     <>
@@ -39,19 +20,23 @@ export default function FavouritesPage() {
         </div>
       ) : (
         <div className="space-y-10 py-6">
-          <Section title="Movies" count={favMovies.length}>
-            {favMovies.map((m) => (
-              <PosterCard key={m.stream_id} href={`/movies/${m.stream_id}`} item={{ id: m.stream_id, name: m.name, poster: m.stream_icon, rating: m.rating, year: yearFrom(m.name) }} />
+          <Section title="Movies" count={favourites.movie.length}>
+            {favourites.movie.map((m) => (
+              <PosterCard key={m.id} href={`/movies/${m.id}`} item={{ id: m.id, name: m.name, poster: m.poster }} />
             ))}
           </Section>
-          <Section title="Series" count={favSeries.length}>
-            {favSeries.map((s) => (
-              <PosterCard key={s.series_id} href={`/series/${s.series_id}`} item={{ id: s.series_id, name: s.name, poster: s.cover, rating: s.rating, year: yearFrom(s.releaseDate, s.name) }} />
+          <Section title="Series" count={favourites.series.length}>
+            {favourites.series.map((s) => (
+              <PosterCard key={s.id} href={`/series/${s.id}`} item={{ id: s.id, name: s.name, poster: s.poster }} />
             ))}
           </Section>
-          <Section title="Live Channels" count={favLive.length}>
-            {favLive.map((c) => (
-              <PosterCard key={c.stream_id} href={`/watch?type=live&id=${c.stream_id}&ext=ts&title=${encodeURIComponent(cleanName(c.name))}`} item={{ id: c.stream_id, name: c.name, poster: c.stream_icon, subtitle: "Live" }} />
+          <Section title="Live Channels" count={favourites.live.length}>
+            {favourites.live.map((c) => (
+              <PosterCard
+                key={c.id}
+                href={`/watch?type=live&id=${c.id}&ext=ts&title=${encodeURIComponent(cleanName(c.name))}`}
+                item={{ id: c.id, name: c.name, poster: c.poster, subtitle: "Live" }}
+              />
             ))}
           </Section>
         </div>

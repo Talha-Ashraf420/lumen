@@ -4,75 +4,62 @@ import { useMemo } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Hero, type HeroItem } from "@/components/catalog/Hero";
 import { Shelf } from "@/components/catalog/Shelf";
-import { PosterCard, type PosterItem } from "@/components/catalog/PosterCard";
-import { PosterSkeletonRow } from "@/components/ui/Skeleton";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { useVodStreams, useSeriesList, useLiveStreams } from "@/lib/hooks";
+import { PosterCard } from "@/components/catalog/PosterCard";
+import { PosterSkeletonRow, Skeleton } from "@/components/ui/Skeleton";
+import { useVodCategories, useSeriesCategories, useVodStreams, useSeriesList } from "@/lib/hooks";
 import { useLibrary, continueWatching } from "@/store/library";
 import { sortItems, yearFrom, ratingNum, cleanName } from "@/lib/utils";
 
 const CARD = "w-[140px] shrink-0 sm:w-[165px]";
 
 export default function HomePage() {
-  const movies = useVodStreams();
-  const series = useSeriesList();
-  const live = useLiveStreams();
+  const vodCats = useVodCategories();
+  const seriesCats = useSeriesCategories();
   const { progress, favourites } = useLibrary();
-
   const cw = useMemo(() => continueWatching(progress), [progress]);
 
+  // Hero comes from the first series category (fast) — series carry backdrops.
+  const heroCatId = seriesCats.data?.[0]?.category_id;
+  const heroSeries = useSeriesList(heroCatId);
+
   const heroItems: HeroItem[] = useMemo(() => {
-    const s = (series.data ?? [])
-      .filter((x) => x.backdrop_path && x.backdrop_path.length > 0)
-      .sort((a, b) => ratingNum(b.rating) - ratingNum(a.rating))
-      .slice(0, 5)
-      .map((x) => ({
-        id: `s-${x.series_id}`,
-        title: x.name,
-        backdrop: x.backdrop_path?.[0] || x.cover,
-        plot: x.plot,
-        rating: ratingNum(x.rating) || undefined,
-        year: yearFrom(x.releaseDate, x.release_date, x.name),
-        meta: x.genre,
-        detailHref: `/series/${x.series_id}`,
-        playHref: `/series/${x.series_id}`,
+    const withArt = (heroSeries.data ?? []).filter((s) => s.backdrop_path?.length || s.cover);
+    return sortItems(withArt, "rating")
+      .slice(0, 6)
+      .map((s) => ({
+        id: `s-${s.series_id}`,
+        title: s.name,
+        backdrop: s.backdrop_path?.[0] || s.cover,
+        plot: s.plot,
+        rating: ratingNum(s.rating) || undefined,
+        year: yearFrom(s.releaseDate, s.release_date, s.name),
+        meta: s.genre,
+        detailHref: `/series/${s.series_id}`,
+        playHref: `/series/${s.series_id}`,
       }));
-    if (s.length >= 3) return s;
-    // fallback: top movies (poster as backdrop)
-    const m = sortItems(movies.data ?? [], "rating")
-      .slice(0, 5)
-      .map((x) => ({
-        id: `m-${x.stream_id}`,
-        title: x.name,
-        backdrop: x.stream_icon,
-        rating: ratingNum(x.rating) || undefined,
-        year: yearFrom(x.name),
-        detailHref: `/movies/${x.stream_id}`,
-        playHref: `/movies/${x.stream_id}`,
-      }));
-    return [...s, ...m].slice(0, 5);
-  }, [series.data, movies.data]);
+  }, [heroSeries.data]);
 
-  const recentMovies = useMemo(() => sortItems(movies.data ?? [], "added").slice(0, 24), [movies.data]);
-  const topMovies = useMemo(() => sortItems(movies.data ?? [], "rating").slice(0, 24), [movies.data]);
-  const recentSeries = useMemo(() => sortItems(series.data ?? [], "added").slice(0, 24), [series.data]);
+  // A handful of categories → fast parallel shelves (each ~400ms vs 22s for "all").
+  const shelves = useMemo(() => {
+    const m = (vodCats.data ?? []).slice(0, 6).map((c) => ({ kind: "movie" as const, cat: c }));
+    const s = (seriesCats.data ?? []).slice(0, 5).map((c) => ({ kind: "series" as const, cat: c }));
+    // interleave so the page mixes films & shows
+    const out: Array<{ kind: "movie" | "series"; cat: { category_id: string; category_name: string } }> = [];
+    const max = Math.max(m.length, s.length);
+    for (let i = 0; i < max; i++) {
+      if (m[i]) out.push(m[i]);
+      if (s[i]) out.push(s[i]);
+    }
+    return out;
+  }, [vodCats.data, seriesCats.data]);
 
-  const favMovies = useMemo(
-    () => (movies.data ?? []).filter((m) => favourites.movie.includes(m.stream_id)).slice(0, 24),
-    [movies.data, favourites.movie],
-  );
-  const favLive = useMemo(
-    () => (live.data ?? []).filter((c) => favourites.live.includes(c.stream_id)).slice(0, 24),
-    [live.data, favourites.live],
-  );
-
-  const loading = movies.isLoading && series.isLoading;
+  const loadingHero = seriesCats.isLoading || heroSeries.isLoading;
 
   return (
     <>
       <TopBar title="Home" />
 
-      {loading ? (
+      {loadingHero ? (
         <Skeleton className="h-[52vh] min-h-[360px] w-full rounded-none" />
       ) : heroItems.length > 0 ? (
         <Hero items={heroItems} />
@@ -98,66 +85,80 @@ export default function HomePage() {
           </Shelf>
         )}
 
-        {favLive.length > 0 && (
+        {favourites.live.length > 0 && (
           <Shelf title="Favourite Channels">
-            {favLive.map((c) => (
+            {favourites.live.map((c) => (
               <PosterCard
-                key={c.stream_id}
+                key={c.id}
                 className={CARD}
-                item={{ id: c.stream_id, name: c.name, poster: c.stream_icon, subtitle: "Live" }}
-                href={`/watch?type=live&id=${c.stream_id}&ext=ts&title=${encodeURIComponent(cleanName(c.name))}`}
+                item={{ id: c.id, name: c.name, poster: c.poster, subtitle: "Live" }}
+                href={`/watch?type=live&id=${c.id}&ext=ts&title=${encodeURIComponent(cleanName(c.name))}`}
               />
             ))}
           </Shelf>
         )}
 
-        <MovieShelf title="Recently Added Movies" loading={movies.isLoading} items={recentMovies} />
-        <MovieShelf title="Top Rated Movies" loading={movies.isLoading} items={topMovies} />
-        <SeriesShelf title="Fresh Series" loading={series.isLoading} items={recentSeries} />
+        {(vodCats.isLoading || seriesCats.isLoading) && (
+          <>
+            <ShelfSkeleton />
+            <ShelfSkeleton />
+          </>
+        )}
 
-        {favMovies.length > 0 && (
-          <MovieShelf title="My List" loading={false} items={favMovies} />
+        {shelves.map(({ kind, cat }) => (
+          <CategoryShelf key={`${kind}-${cat.category_id}`} kind={kind} catId={cat.category_id} title={cat.category_name} />
+        ))}
+
+        {(favourites.movie.length > 0 || favourites.series.length > 0) && (
+          <Shelf title="My List">
+            {[...favourites.movie.map((m) => ({ ...m, kind: "movie" as const })), ...favourites.series.map((s) => ({ ...s, kind: "series" as const }))].map((it) => (
+              <PosterCard
+                key={`${it.kind}-${it.id}`}
+                className={CARD}
+                item={{ id: it.id, name: it.name, poster: it.poster }}
+                href={it.kind === "movie" ? `/movies/${it.id}` : `/series/${it.id}`}
+              />
+            ))}
+          </Shelf>
         )}
       </div>
     </>
   );
 }
 
-function MovieShelf({
+function CategoryShelf({
+  kind,
+  catId,
   title,
-  items,
-  loading,
 }: {
+  kind: "movie" | "series";
+  catId: string;
   title: string;
-  items: Array<{ stream_id: number; name: string; stream_icon: string; rating: string | number }>;
-  loading: boolean;
 }) {
-  if (loading) return <ShelfSkeleton title={title} />;
-  if (items.length === 0) return null;
-  return (
-    <Shelf title={title}>
-      {items.map((m) => (
-        <PosterCard
-          key={m.stream_id}
-          className={CARD}
-          item={mapPoster(m.stream_id, m.name, m.stream_icon, m.rating, yearFrom(m.name))}
-          href={`/movies/${m.stream_id}`}
-        />
-      ))}
-    </Shelf>
-  );
-}
+  const movies = useVodStreams(kind === "movie" ? catId : undefined);
+  const series = useSeriesList(kind === "series" ? catId : undefined);
+  const q = kind === "movie" ? movies : series;
 
-function SeriesShelf({
-  title,
-  items,
-  loading,
-}: {
-  title: string;
-  items: Array<{ series_id: number; name: string; cover: string; rating: string | number; releaseDate?: string }>;
-  loading: boolean;
-}) {
-  if (loading) return <ShelfSkeleton title={title} />;
+  if (q.isLoading) return <ShelfSkeleton title={title} />;
+
+  if (kind === "movie") {
+    const items = sortItems(movies.data ?? [], "added").slice(0, 20);
+    if (items.length === 0) return null;
+    return (
+      <Shelf title={title}>
+        {items.map((m) => (
+          <PosterCard
+            key={m.stream_id}
+            className={CARD}
+            item={{ id: m.stream_id, name: m.name, poster: m.stream_icon, rating: m.rating, year: yearFrom(m.name) }}
+            href={`/movies/${m.stream_id}`}
+          />
+        ))}
+      </Shelf>
+    );
+  }
+
+  const items = sortItems(series.data ?? [], "added").slice(0, 20);
   if (items.length === 0) return null;
   return (
     <Shelf title={title}>
@@ -165,7 +166,7 @@ function SeriesShelf({
         <PosterCard
           key={s.series_id}
           className={CARD}
-          item={mapPoster(s.series_id, s.name, s.cover, s.rating, yearFrom(s.releaseDate, s.name))}
+          item={{ id: s.series_id, name: s.name, poster: s.cover, rating: s.rating, year: yearFrom(s.releaseDate, s.name) }}
           href={`/series/${s.series_id}`}
         />
       ))}
@@ -173,20 +174,12 @@ function SeriesShelf({
   );
 }
 
-function mapPoster(
-  id: number,
-  name: string,
-  poster: string,
-  rating: string | number,
-  year: string,
-): PosterItem {
-  return { id, name, poster, rating, year };
-}
-
-function ShelfSkeleton({ title }: { title: string }) {
+function ShelfSkeleton({ title }: { title?: string }) {
   return (
     <section>
-      <h2 className="mb-3 px-5 text-lg font-semibold sm:px-8">{title}</h2>
+      <div className="mb-3 px-5 sm:px-8">
+        {title ? <h2 className="text-lg font-semibold">{title}</h2> : <Skeleton className="h-6 w-40" />}
+      </div>
       <PosterSkeletonRow />
     </section>
   );

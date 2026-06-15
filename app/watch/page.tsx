@@ -2,9 +2,10 @@
 
 import { Suspense, useMemo, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { VideoPlayer } from "@/components/player/VideoPlayer";
-import { streamSrc } from "@/lib/api";
+import { streamSrc, resolveSrc } from "@/lib/api";
 import { useSeriesInfo } from "@/lib/hooks";
 import { useLibrary } from "@/store/library";
 import type { StreamKind, Episode } from "@/lib/xtream/types";
@@ -36,7 +37,19 @@ function WatchInner() {
   const nextEp = currentIdx >= 0 ? flatEpisodes[currentIdx + 1] : undefined;
   const poster = type === "series" ? seriesInfo?.info?.cover : undefined;
 
-  const src = streamSrc(type, id, ext);
+  // VOD plays directly from the provider (fast); live must use the proxy (MSE/CORS).
+  const { data: directUrl, isLoading: resolving } = useQuery({
+    queryKey: ["resolve", type, id, ext],
+    queryFn: () => resolveSrc(type, id, ext),
+    enabled: !isLive && !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const sources = useMemo(() => {
+    const proxy = streamSrc(type, id, ext);
+    if (isLive) return [proxy];
+    return directUrl ? [directUrl, proxy] : [proxy];
+  }, [isLive, type, id, ext, directUrl]);
 
   // mark live channels recently-watched once
   const recentedRef = useRef(false);
@@ -84,9 +97,17 @@ function WatchInner() {
     );
   }
 
+  if (!isLive && resolving) {
+    return (
+      <div className="grid h-dvh place-items-center bg-black">
+        <Loader2 className="h-10 w-10 animate-spin text-amber-glow" />
+      </div>
+    );
+  }
+
   return (
     <VideoPlayer
-      src={src}
+      sources={sources}
       ext={ext}
       isLive={isLive}
       title={title}

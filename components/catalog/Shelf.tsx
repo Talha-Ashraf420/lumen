@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,13 @@ export function Shelf({
   };
 
   return (
-    <section className={cn("group/shelf relative", className)}>
+    <motion.section
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className={cn("group/shelf relative", className)}
+    >
       <h2 className="mb-3 px-5 text-lg font-semibold tracking-tight sm:px-8">{title}</h2>
       <div className="relative">
         <button
@@ -46,6 +53,6 @@ export function Shelf({
           <ChevronRight className="h-7 w-7" />
         </button>
       </div>
-    </section>
+    </motion.section>
   );
 }

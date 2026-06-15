@@ -9,7 +9,7 @@ import { attach, type EngineHandle } from "@/lib/player/engine";
 import { formatTime, cn } from "@/lib/utils";
 
 export function VideoPlayer({
-  src,
+  sources,
   ext,
   isLive,
   title,
@@ -20,7 +20,8 @@ export function VideoPlayer({
   onProgress,
   onEnded,
 }: {
-  src: string;
+  /** Ordered candidate URLs — first is tried, next used on failure (direct → proxy). */
+  sources: string[];
   ext: string;
   isLive: boolean;
   title: string;
@@ -45,13 +46,33 @@ export function VideoPlayer({
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsOn, setControlsOn] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [srcIdx, setSrcIdx] = useState(0);
+
+  const src = sources[srcIdx] ?? sources[0];
+
+  // reset to the preferred source whenever the candidate list changes
+  useEffect(() => setSrcIdx(0), [sources]);
+
+  const tryFallback = useCallback(
+    (msg: string) => {
+      setSrcIdx((i) => {
+        if (i < sources.length - 1) {
+          setError(null);
+          setBuffering(true);
+          return i + 1;
+        }
+        setError(msg);
+        return i;
+      });
+    },
+    [sources.length],
+  );
 
   // (re)attach engine when src changes
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !src) return;
     let cancelled = false;
-    setError(null);
     setBuffering(true);
 
     (async () => {
@@ -61,7 +82,7 @@ export function VideoPlayer({
         if (cancelled) return;
         video.play().catch(() => {});
       } catch (e) {
-        if (!cancelled) setError((e as Error).message || "Playback failed");
+        if (!cancelled) tryFallback((e as Error).message || "Playback failed");
       }
     })();
 
@@ -70,7 +91,7 @@ export function VideoPlayer({
       engineRef.current?.destroy();
       engineRef.current = null;
     };
-  }, [src, ext, isLive]);
+  }, [src, ext, isLive, tryFallback]);
 
   // media element events
   useEffect(() => {
@@ -91,7 +112,7 @@ export function VideoPlayer({
     };
     const onEnd = () => onEnded?.();
     const onErr = () =>
-      setError(
+      tryFallback(
         `This stream couldn't be played in the browser${
           /mkv|avi|wmv/i.test(ext) ? ` (.${ext} often needs VLC).` : "."
         }`,
@@ -115,7 +136,7 @@ export function VideoPlayer({
       v.removeEventListener("ended", onEnd);
       v.removeEventListener("error", onErr);
     };
-  }, [ext, isLive, startTime, onProgress, onEnded]);
+  }, [ext, isLive, startTime, onProgress, onEnded, tryFallback]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);

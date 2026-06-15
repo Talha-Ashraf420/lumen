@@ -120,6 +120,29 @@ body {
   }
 }
 
+/* drifting aurora blobs (background ambience) */
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(8vw, 6vh) scale(1.15); }
+  66% { transform: translate(-6vw, 10vh) scale(0.92); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-10vw, -8vh) scale(1.2); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12vw, -6vh) scale(1.1); }
+}
+.aurora-blob { will-change: transform; }
+
+/* perspective wrapper for 3D tilt */
+.tilt-scene { perspective: 1000px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob { animation: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shimmer::after {
     animation: none;

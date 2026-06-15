@@ -36,7 +36,9 @@ export default function MovieDetailPage() {
       poster={info?.movie_image}
       title={title}
       fav={fav}
-      onToggleFav={() => toggleFav("movie", Number(id))}
+      onToggleFav={() =>
+        toggleFav("movie", { id: Number(id), name: cleanName(title), poster: info?.movie_image, ext })
+      }
     >
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{cleanName(title)}</h1>
 

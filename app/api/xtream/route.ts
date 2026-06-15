@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { dispatch, XtreamError } from "@/lib/xtream/client";
 import { requireSession } from "@/lib/session";
+import { cached } from "@/lib/xtream/cache";
 
 export const runtime = "nodejs";
+
+// Per-action cache TTLs (ms). Catalogs change rarely; EPG is more volatile.
+const TTL: Record<string, number> = {
+  get_vod_streams: 15 * 60 * 1000,
+  get_series: 15 * 60 * 1000,
+  get_live_streams: 10 * 60 * 1000,
+  get_vod_categories: 30 * 60 * 1000,
+  get_series_categories: 30 * 60 * 1000,
+  get_live_categories: 30 * 60 * 1000,
+  get_vod_info: 30 * 60 * 1000,
+  get_series_info: 30 * 60 * 1000,
+};
 
 /**
  * Generic same-origin proxy for player_api.php actions.
@@ -27,9 +40,11 @@ export async function GET(req: Request) {
   }
 
   try {
-    const data = await dispatch(creds, action, params);
+    const ttl = TTL[action] ?? 60 * 1000;
+    const key = `${creds.username}|${action}|${JSON.stringify(params)}`;
+    const data = await cached(key, ttl, () => dispatch(creds, action, params));
     return NextResponse.json(data, {
-      headers: { "Cache-Control": "private, max-age=30" },
+      headers: { "Cache-Control": "private, max-age=60" },
     });
   } catch (err) {
     const status = err instanceof XtreamError && err.status ? err.status : 502;

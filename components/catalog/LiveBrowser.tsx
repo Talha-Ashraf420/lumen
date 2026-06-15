@@ -112,7 +112,15 @@ function ChannelTile({ channel }: { channel: LiveStream }) {
       className="group relative flex flex-col items-center gap-2.5 rounded-[--radius-card] border border-white/5 bg-ink-850 p-4 transition-all hover:-translate-y-0.5 hover:glow-amber"
     >
       <button
-        onClick={(e) => { e.preventDefault(); toggleFav("live", channel.stream_id); }}
+        onClick={(e) => {
+          e.preventDefault();
+          toggleFav("live", {
+            id: channel.stream_id,
+            name: cleanName(channel.name),
+            poster: channel.stream_icon,
+            ext: "ts",
+          });
+        }}
         className={cn(
           "absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-ink-950/60 transition-colors",
           fav ? "text-amber-glow" : "text-fog-500 opacity-0 group-hover:opacity-100 hover:text-foreground",

@@ -47,7 +47,16 @@ export async function attach(
     if (mpegts.getFeatureList().mseLivePlayback || mpegts.isSupported()) {
       const player = mpegts.createPlayer(
         { type: "mpegts", isLive: opts.isLive, url: opts.url },
-        { enableStashBuffer: !opts.isLive, liveBufferLatencyChasing: opts.isLive, lazyLoad: false },
+        {
+          enableStashBuffer: false, // start playing ASAP, don't pre-buffer
+          stashInitialSize: 128,
+          lazyLoad: false,
+          liveBufferLatencyChasing: opts.isLive,
+          liveBufferLatencyChasingOnPaused: false,
+          liveBufferLatencyMaxLatency: 3.0,
+          liveBufferLatencyMinRemain: 0.5,
+          autoCleanupSourceBuffer: true,
+        },
       );
       player.attachMediaElement(video);
       player.load();

@@ -24,17 +24,24 @@ export function CatalogBrowser<T extends Sortable>({
   emptyLabel = "No titles found.",
 }: {
   categories: Category[];
-  useItems: (categoryId?: string) => UseQueryResult<T[]>;
+  useItems: (categoryId?: string, enabled?: boolean) => UseQueryResult<T[]>;
   toPoster: (item: T) => PosterItem;
   hrefFor: (item: T) => string;
   emptyLabel?: string;
 }) {
-  const [category, setCategory] = useState("all");
+  // null = not chosen yet; default to the first category (fast) instead of "all" (slow).
+  const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("added");
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE);
 
-  const { data, isLoading, isError, error } = useItems(category === "all" ? undefined : category);
+  useEffect(() => {
+    if (category === null && categories.length > 0) setCategory(categories[0].category_id);
+  }, [categories, category]);
+
+  const ready = category !== null;
+  const fetchCat = category && category !== "all" ? category : undefined;
+  const { data, isLoading, isError, error } = useItems(fetchCat, ready);
 
   const filtered = useMemo(() => {
     let items = data ?? [];
@@ -64,7 +71,7 @@ export function CatalogBrowser<T extends Sortable>({
     <div className="flex flex-col">
       <FilterBar
         categories={categories}
-        activeCategory={category}
+        activeCategory={category ?? ""}
         onCategory={setCategory}
         sort={sort}
         onSort={setSort}
@@ -73,7 +80,7 @@ export function CatalogBrowser<T extends Sortable>({
         count={filtered.length}
       />
 
-      {isLoading ? (
+      {!ready || isLoading ? (
         <div className="py-5">
           <PosterGridSkeleton />
         </div>
