@@ -31,6 +31,7 @@ export function VideoPlayer({
   onProgress,
   onEnded,
   subtitles = [],
+  knownDuration = 0,
 }: {
   /** Ordered candidate URLs — first is tried, next used on failure (direct → proxy). */
   sources: string[];
@@ -45,6 +46,8 @@ export function VideoPlayer({
   onEnded?: () => void;
   /** Provider-supplied subtitle tracks (proxied .vtt URLs). */
   subtitles?: Array<{ label: string; src: string; lang?: string }>;
+  /** Real runtime (s) from metadata — used when a remuxed stream has no duration. */
+  knownDuration?: number;
 }) {
   const extSubs = subtitles;
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -72,6 +75,10 @@ export function VideoPlayer({
   const [activeTrack, setActiveTrack] = useState<number>(-1); // -1 = off
 
   const src = sources[srcIdx] ?? sources[0];
+  // Remuxed (ffmpeg) streams are fragmented & non-seekable and report no duration.
+  const isTranscode = !!src && src.includes("/api/transcode");
+  const seekable = !isLive && !isTranscode;
+  const total = isTranscode && knownDuration > 0 ? knownDuration : duration;
 
   // reset to the preferred source whenever the candidate list changes
   useEffect(() => setSrcIdx(0), [sources]);
@@ -145,7 +152,13 @@ export function VideoPlayer({
     const onTime = () => {
       setCurrent(v.currentTime);
       setDuration(v.duration || 0);
-      onProgress?.(v.currentTime, v.duration || 0);
+      // remuxed streams report a growing fake duration — report the real runtime
+      // for progress, and skip if we don't know it (avoids bad continue-watching).
+      if (isTranscode) {
+        if (knownDuration > 0) onProgress?.(v.currentTime, knownDuration);
+      } else {
+        onProgress?.(v.currentTime, v.duration || 0);
+      }
     };
     const onEnd = () => onEnded?.();
     const onErr = () =>
@@ -173,7 +186,7 @@ export function VideoPlayer({
       v.removeEventListener("ended", onEnd);
       v.removeEventListener("error", onErr);
     };
-  }, [ext, isLive, startTime, onProgress, onEnded, tryFallback]);
+  }, [ext, isLive, startTime, onProgress, onEnded, tryFallback, isTranscode, knownDuration]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -301,8 +314,8 @@ export function VideoPlayer({
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
       switch (e.key) {
         case " ": e.preventDefault(); togglePlay(); break;
-        case "ArrowRight": seek(current + 10); break;
-        case "ArrowLeft": seek(current - 10); break;
+        case "ArrowRight": if (seekable) seek(current + 10); break;
+        case "ArrowLeft": if (seekable) seek(current - 10); break;
         case "ArrowUp": changeVolume(Math.min(1, volume + 0.1)); break;
         case "ArrowDown": changeVolume(Math.max(0, volume - 0.1)); break;
         case "f": toggleFs(); break;
@@ -317,7 +330,7 @@ export function VideoPlayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [current, volume, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, trackList, activeTrack, selectTrack, hasNext, onNext]);
+  }, [current, volume, seekable, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, trackList, activeTrack, selectTrack, hasNext, onNext]);
 
   return (
     <div
@@ -409,25 +422,29 @@ export function VideoPlayer({
           controlsOn ? "opacity-100" : "opacity-0",
         )}
       >
-        {/* seek bar (VOD only) */}
+        {/* seek bar (VOD) — read-only for remuxed streams (can't scrub a pipe) */}
         {!isLive && (
           <div className="mb-3 flex items-center gap-3 text-xs tabular-nums text-fog-300">
             <span className="w-12 text-right">{formatTime(current)}</span>
             <input
               type="range"
               min={0}
-              max={duration || 0}
+              max={total || 0}
               step={1}
               value={current}
-              onChange={(e) => seek(Number(e.target.value))}
-              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-iris-400 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-iris-400"
+              disabled={!seekable}
+              onChange={(e) => seekable && seek(Number(e.target.value))}
+              className={cn(
+                "h-1.5 flex-1 appearance-none rounded-full bg-white/20 accent-iris-400 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-iris-400",
+                seekable ? "cursor-pointer" : "cursor-default [&::-webkit-slider-thumb]:hidden",
+              )}
               style={{
                 background: `linear-gradient(to right, var(--color-iris-400) ${
-                  duration ? (current / duration) * 100 : 0
+                  total ? (current / total) * 100 : 0
                 }%, rgba(255,255,255,0.2) 0%)`,
               }}
             />
-            <span className="w-12">{formatTime(duration)}</span>
+            <span className="w-12">{total ? formatTime(total) : "—:—"}</span>
           </div>
         )}
 
@@ -436,7 +453,7 @@ export function VideoPlayer({
             {playing ? <Pause className="h-7 w-7 fill-white" /> : <Play className="h-7 w-7 fill-white" />}
           </button>
 
-          {!isLive && (
+          {seekable && (
             <>
               <button onClick={() => seek(current - 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Back 10s (←)">
                 <RotateCcw className="h-6 w-6" />

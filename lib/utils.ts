@@ -2,6 +2,24 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
+/** Parse "HH:MM:SS" / "MM:SS" / "123 min" / number into seconds. */
+export function parseDurationToSeconds(v?: string | number): number {
+  if (v === undefined || v === null) return 0;
+  if (typeof v === "number") return v;
+  const s = v.trim();
+  if (/^\d+$/.test(s)) return Number(s);
+  const clock = s.match(/(\d+):(\d{1,2})(?::(\d{1,2}))?/);
+  if (clock) {
+    const a = Number(clock[1]);
+    const b = Number(clock[2]);
+    const c = clock[3] ? Number(clock[3]) : null;
+    return c !== null ? a * 3600 + b * 60 + c : a * 60 + b;
+  }
+  const min = s.match(/(\d+)\s*min/i);
+  if (min) return Number(min[1]) * 60;
+  return 0;
+}
+
 export function formatTime(sec: number): string {
   if (!isFinite(sec) || sec < 0) return "0:00";
   const h = Math.floor(sec / 3600);

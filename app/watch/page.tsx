@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { VideoPlayer } from "@/components/player/VideoPlayer";
-import { streamSrc, resolveSrc, transcodeSrc } from "@/lib/api";
+import { streamSrc, resolveSrc, transcodeSrc, api } from "@/lib/api";
 import { useSeriesInfo } from "@/lib/hooks";
 import { useLibrary } from "@/store/library";
+import { parseDurationToSeconds } from "@/lib/utils";
 import type { StreamKind, Episode } from "@/lib/xtream/types";
 
 function WatchInner() {
@@ -36,6 +37,26 @@ function WatchInner() {
   const currentIdx = flatEpisodes.findIndex((e) => String(e.id) === id);
   const nextEp = currentIdx >= 0 ? flatEpisodes[currentIdx + 1] : undefined;
   const poster = type === "series" ? seriesInfo?.info?.cover : undefined;
+
+  // Real runtime from provider metadata — used to show a correct total/progress
+  // when a remuxed (fragmented) stream reports no duration of its own.
+  const { data: movieInfo } = useQuery({
+    queryKey: ["vod", "info", id],
+    queryFn: () => api.vodInfo(id),
+    enabled: type === "movie" && !!id,
+    staleTime: 30 * 60 * 1000,
+  });
+  const knownDuration = useMemo(() => {
+    if (type === "movie") {
+      const inf = movieInfo?.info;
+      return inf?.duration_secs || parseDurationToSeconds(inf?.duration) || 0;
+    }
+    if (type === "series") {
+      const ep = flatEpisodes.find((e) => String(e.id) === id);
+      return ep?.info?.duration_secs || parseDurationToSeconds(ep?.info?.duration) || 0;
+    }
+    return 0;
+  }, [type, id, movieInfo, flatEpisodes]);
 
   // VOD plays directly from the provider when that's viable (fast); otherwise
   // we go straight to the proxy. Live always uses the proxy (MSE/CORS).
@@ -117,6 +138,7 @@ function WatchInner() {
       title={title}
       startTime={resume}
       hasNext={!!nextEp}
+      knownDuration={knownDuration}
       onNext={goNext}
       onBack={() => router.back()}
       onProgress={onProgress}
