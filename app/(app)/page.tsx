@@ -61,7 +61,7 @@ export default function HomePage() {
         <KineticTitle eyebrow="Welcome back" text="What will you watch tonight?" />
 
         {/* bento mosaic */}
-        <div className="grid auto-rows-[150px] grid-cols-2 gap-4 lg:grid-cols-6">
+        <div className="grid auto-rows-[168px] grid-cols-2 gap-4 lg:grid-cols-6">
           {heroLoading ? (
             <Skeleton className="col-span-2 row-span-2 rounded-3xl lg:col-span-4" />
           ) : (

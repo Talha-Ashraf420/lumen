@@ -33,11 +33,11 @@ export function FeaturedTile({ items, className }: { items: HeroItem[]; classNam
           transition={{ duration: 1 }}
           className="absolute inset-0"
         >
-          <SmartImage src={item.backdrop} alt={item.title} rounded="rounded-none" className="h-full w-full" />
+          <SmartImage src={item.backdrop} alt={item.title} rounded="rounded-none" className="kenburns h-full w-full" />
         </motion.div>
       </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/30 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-ink-950/70 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/20 to-transparent" />
 
       <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
         <motion.div
@@ -49,7 +49,7 @@ export function FeaturedTile({ items, className }: { items: HeroItem[]; classNam
           <span className="mb-2 inline-block rounded-full glass px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-iris-300">
             Featured
           </span>
-          <h2 className="max-w-lg text-2xl font-bold leading-tight drop-shadow-lg sm:text-4xl">
+          <h2 className="max-w-xl text-3xl font-bold leading-[1.05] tracking-tight drop-shadow-xl sm:text-5xl">
             {cleanName(item.title)}
           </h2>
           <div className="mt-2 flex items-center gap-3 text-sm text-fog-300">

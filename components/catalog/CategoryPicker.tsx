@@ -71,7 +71,7 @@ export function CategoryPicker({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
-            className="absolute left-0 top-12 z-40 w-[300px] overflow-hidden rounded-2xl glass-bright shadow-2xl"
+            className="absolute left-0 top-12 z-40 w-[300px] overflow-hidden rounded-2xl panel"
           >
             <div className="flex items-center gap-2 border-b border-white/10 px-3.5 py-2.5">
               <Search className="h-4 w-4 shrink-0 text-fog-500" />

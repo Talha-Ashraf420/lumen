@@ -65,7 +65,7 @@ export function TopBar({ title }: { title?: string }) {
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-5 top-16 z-40 w-72 rounded-2xl glass p-4 shadow-2xl sm:right-8">
+          <div className="absolute right-5 top-16 z-40 w-72 rounded-2xl panel p-4 sm:right-8">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">Account</span>
               <button onClick={() => setOpen(false)} className="text-fog-500 hover:text-foreground">

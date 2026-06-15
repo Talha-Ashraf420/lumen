@@ -470,7 +470,7 @@ export function VideoPlayer({
               {capMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setCapMenu(false)} />
-                  <div className="absolute bottom-10 right-0 z-20 max-h-72 w-56 overflow-y-auto rounded-xl glass py-1 text-sm shadow-2xl">
+                  <div className="absolute bottom-10 right-0 z-20 max-h-72 w-56 overflow-y-auto rounded-xl panel py-1 text-sm">
                     <p className="px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-fog-500">Subtitles</p>
                     <button
                       onClick={() => { selectTrack(-1); setCapMenu(false); }}
@@ -518,7 +518,7 @@ export function VideoPlayer({
                 {speedMenu && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setSpeedMenu(false)} />
-                    <div className="absolute bottom-10 right-0 z-20 w-28 overflow-hidden rounded-xl glass py-1 text-sm shadow-2xl">
+                    <div className="absolute bottom-10 right-0 z-20 w-28 overflow-hidden rounded-xl panel py-1 text-sm">
                       {SPEEDS.map((s) => (
                         <button
                           key={s}
