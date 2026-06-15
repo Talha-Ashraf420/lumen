@@ -119,7 +119,7 @@ export function VideoPlayer({
         if (!cancelled && v && v.readyState < 3) {
           tryFallback("Stream was slow to start — switching to backup source.");
         }
-      }, 8000);
+      }, 12000);
     }
 
     return () => {

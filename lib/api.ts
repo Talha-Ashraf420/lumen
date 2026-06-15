@@ -79,6 +79,11 @@ export function streamSrc(kind: StreamKind, id: string | number, ext = "ts"): st
   return `/api/stream?type=${kind}&id=${id}&ext=${encodeURIComponent(ext)}`;
 }
 
+/** ffmpeg remux URL — fallback for browser-unplayable containers (mkv/avi/…). */
+export function transcodeSrc(kind: StreamKind, id: string | number, ext: string): string {
+  return `/api/transcode?type=${kind}&id=${id}&ext=${encodeURIComponent(ext)}`;
+}
+
 /** Resolve the direct provider URL + whether direct browser playback is viable. */
 export async function resolveSrc(
   kind: StreamKind,

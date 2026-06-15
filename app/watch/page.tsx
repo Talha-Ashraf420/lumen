@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { VideoPlayer } from "@/components/player/VideoPlayer";
-import { streamSrc, resolveSrc } from "@/lib/api";
+import { streamSrc, resolveSrc, transcodeSrc } from "@/lib/api";
 import { useSeriesInfo } from "@/lib/hooks";
 import { useLibrary } from "@/store/library";
 import type { StreamKind, Episode } from "@/lib/xtream/types";
@@ -49,9 +49,10 @@ function WatchInner() {
   const sources = useMemo(() => {
     const proxy = streamSrc(type, id, ext);
     if (isLive) return [proxy];
-    // direct first only when the probe says the provider serves browsers; else proxy-first.
-    if (resolved?.url && resolved.directOk) return [resolved.url, proxy];
-    return [proxy, ...(resolved?.url ? [resolved.url] : [])];
+    // VOD chain: [direct (only if the probe says browsers are allowed)] → proxy →
+    // ffmpeg remux (handles MKV/AVI the browser can't decode natively).
+    const transcode = transcodeSrc(type, id, ext);
+    return [...(resolved?.directOk && resolved.url ? [resolved.url] : []), proxy, transcode];
   }, [isLive, type, id, ext, resolved]);
 
   // mark live channels recently-watched once
