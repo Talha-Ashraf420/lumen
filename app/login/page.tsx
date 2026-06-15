@@ -58,9 +58,8 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-iris-300 to-iris-500 text-2xl font-black text-ink-950 shadow-xl glow-iris">
-            L
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Lumen" className="mb-4 h-16 w-16 rounded-2xl shadow-xl glow-iris" />
           <h1 className="text-3xl font-bold tracking-tight">Lumen</h1>
           <p className="mt-1.5 text-sm text-fog-400">
             Sign in with your Xtream / X3U stream codes.

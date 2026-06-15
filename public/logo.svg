@@ -1,0 +1,45 @@
+<svg viewBox="150 150 380 380" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Lumen</title>
+<defs>
+<linearGradient id="tile" x1="20%" y1="6%" x2="84%" y2="96%">
+<stop offset="0%" stop-color="#aab3ff"/>
+<stop offset="48%" stop-color="#9fc6e8"/>
+<stop offset="100%" stop-color="#8fe3c2"/>
+</linearGradient>
+<linearGradient id="sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+<stop offset="38%" stop-color="#ffffff" stop-opacity="0.10"/>
+<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="emblem" x1="10%" y1="0%" x2="90%" y2="100%">
+<stop offset="0%" stop-color="#ffffff"/>
+<stop offset="55%" stop-color="#f2f6ff"/>
+<stop offset="100%" stop-color="#d6fff0"/>
+</linearGradient>
+<radialGradient id="playglow" cx="40%" cy="40%" r="70%">
+<stop offset="0%" stop-color="#ffffff"/>
+<stop offset="70%" stop-color="#eaf6ff"/>
+<stop offset="100%" stop-color="#cdfbe9"/>
+</radialGradient>
+<linearGradient id="innerglass" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
+<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="tileclip"><rect x="150" y="150" width="380" height="380" rx="92"/></clipPath>
+</defs>
+<rect x="150" y="150" width="380" height="380" rx="92" fill="url(#tile)"/>
+<g clip-path="url(#tileclip)">
+<ellipse cx="250" cy="210" rx="260" ry="180" fill="url(#innerglass)"/>
+<rect x="150" y="150" width="380" height="190" fill="url(#sheen)"/>
+<circle cx="470" cy="470" r="150" fill="#8fe3c2" opacity="0.35"/>
+<circle cx="210" cy="500" r="120" fill="#aab3ff" opacity="0.30"/>
+</g>
+<rect x="150" y="150" width="380" height="380" rx="92" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="1.5"/>
+<rect x="156" y="156" width="368" height="368" rx="86" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+<g>
+<rect x="268" y="248" width="34" height="184" rx="17" fill="url(#emblem)"/>
+<rect x="268" y="398" width="150" height="34" rx="17" fill="url(#emblem)"/>
+<path d="M330 286 Q330 272 342 279 L406 320 Q417 327 406 334 L342 375 Q330 382 330 368 Z" fill="url(#playglow)"/>
+<path d="M330 286 Q330 272 342 279 L406 320 Q417 327 406 334 L342 375 Q330 382 330 368 Z" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1"/>
+</g>
+</svg>

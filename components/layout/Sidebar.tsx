@@ -19,9 +19,8 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 z-30 hidden h-dvh w-[84px] shrink-0 flex-col items-center gap-1 border-r border-white/8 bg-ink-950/40 py-6 backdrop-blur-2xl lg:flex">
       <Link href="/" className="mb-6 flex flex-col items-center gap-1">
-        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-iris-300 via-iris-400 to-mint-400 font-black text-ink-950 shadow-lg shadow-iris-400/30">
-          L
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="Lumen" className="h-11 w-11 rounded-2xl shadow-lg shadow-iris-400/30" />
       </Link>
       {NAV.map(({ href, label, icon: Icon, exact }) => {
         const active = exact ? path === href : path === href || path.startsWith(href + "/");
