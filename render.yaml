@@ -1,0 +1,16 @@
+# Render blueprint — deploy Lumen as a free Docker web service.
+# https://render.com → New → Blueprint → point at this repo.
+services:
+  - type: web
+    name: lumen
+    runtime: docker
+    plan: free
+    healthCheckPath: /login
+    envVars:
+      # Set a password in the Render dashboard to lock the public URL (recommended).
+      - key: SITE_PASSWORD
+        sync: false
+      - key: SITE_USER
+        value: lumen
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
