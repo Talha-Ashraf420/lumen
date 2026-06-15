@@ -4,9 +4,20 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   PictureInPicture2, Loader2, AlertTriangle, SkipForward, ArrowLeft,
+  RotateCcw, RotateCw, Captions, Gauge, Check,
 } from "lucide-react";
 import { attach, type EngineHandle } from "@/lib/player/engine";
 import { formatTime, cn } from "@/lib/utils";
+
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+/** Convert SubRip (.srt) text to WebVTT so the browser can render it. */
+function srtToVtt(text: string): string {
+  const body = text
+    .replace(/\r+/g, "")
+    .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+  return /^WEBVTT/.test(body.trimStart()) ? body : `WEBVTT\n\n${body}`;
+}
 
 export function VideoPlayer({
   sources,
@@ -36,6 +47,7 @@ export function VideoPlayer({
   const wrapRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subFileRef = useRef<HTMLInputElement>(null);
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -47,6 +59,11 @@ export function VideoPlayer({
   const [controlsOn, setControlsOn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [srcIdx, setSrcIdx] = useState(0);
+  const [speed, setSpeed] = useState(1);
+  const [speedMenu, setSpeedMenu] = useState(false);
+  const [subUrl, setSubUrl] = useState<string | null>(null);
+  const [subName, setSubName] = useState<string | null>(null);
+  const [subsOn, setSubsOn] = useState(true);
 
   const src = sources[srcIdx] ?? sources[0];
 
@@ -186,6 +203,47 @@ export function VideoPlayer({
     } catch {}
   };
 
+  // keep playbackRate applied across source swaps
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v) v.playbackRate = speed;
+  }, [speed, src]);
+
+  const applySpeed = (s: number) => {
+    setSpeed(s);
+    setSpeedMenu(false);
+    if (videoRef.current) videoRef.current.playbackRate = s;
+  };
+
+  const loadSubtitleFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = String(reader.result || "");
+      const vtt = file.name.toLowerCase().endsWith(".vtt") ? raw : srtToVtt(raw);
+      const url = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
+      setSubUrl((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return url;
+      });
+      setSubName(file.name);
+      setSubsOn(true);
+    };
+    reader.readAsText(file);
+  };
+
+  // show/hide the loaded text track
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const apply = () => {
+      const tracks = v.textTracks;
+      for (let i = 0; i < tracks.length; i++) tracks[i].mode = subsOn && subUrl ? "showing" : "hidden";
+    };
+    apply();
+    const t = setTimeout(apply, 300); // tracks attach asynchronously
+    return () => clearTimeout(t);
+  }, [subUrl, subsOn, src]);
+
   const showControls = useCallback(() => {
     setControlsOn(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -206,13 +264,15 @@ export function VideoPlayer({
         case "ArrowDown": changeVolume(Math.max(0, volume - 0.1)); break;
         case "f": toggleFs(); break;
         case "m": toggleMute(); break;
+        case "c": if (subUrl) setSubsOn((v) => !v); break;
+        case "n": if (hasNext) onNext?.(); break;
         case "Escape": if (!document.fullscreenElement) onBack?.(); break;
       }
       showControls();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [current, volume, togglePlay, seek, toggleFs, toggleMute, onBack, showControls]);
+  }, [current, volume, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, subUrl, hasNext, onNext]);
 
   return (
     <div
@@ -230,6 +290,21 @@ export function VideoPlayer({
         playsInline
         onClick={togglePlay}
         onDoubleClick={toggleFs}
+      >
+        {subUrl && <track kind="subtitles" src={subUrl} label={subName || "Subtitles"} default />}
+      </video>
+
+      {/* hidden subtitle file picker */}
+      <input
+        ref={subFileRef}
+        type="file"
+        accept=".srt,.vtt,text/vtt"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) loadSubtitleFile(f);
+          e.target.value = "";
+        }}
       />
 
       {/* buffering */}
@@ -308,19 +383,32 @@ export function VideoPlayer({
           </div>
         )}
 
-        <div className="flex items-center gap-4">
-          <button onClick={togglePlay} className="text-white transition-transform hover:scale-110">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button onClick={togglePlay} className="text-white transition-transform hover:scale-110" title="Play/Pause (space)">
             {playing ? <Pause className="h-7 w-7 fill-white" /> : <Play className="h-7 w-7 fill-white" />}
           </button>
 
+          {!isLive && (
+            <>
+              <button onClick={() => seek(current - 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Back 10s (←)">
+                <RotateCcw className="h-6 w-6" />
+                <span className="absolute inset-0 grid place-items-center text-[8px] font-bold">10</span>
+              </button>
+              <button onClick={() => seek(current + 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Forward 10s (→)">
+                <RotateCw className="h-6 w-6" />
+                <span className="absolute inset-0 grid place-items-center text-[8px] font-bold">10</span>
+              </button>
+            </>
+          )}
+
           {!isLive && hasNext && (
-            <button onClick={onNext} className="text-white/90 transition-transform hover:scale-110" title="Next episode">
+            <button onClick={onNext} className="text-white/90 transition-transform hover:scale-110" title="Next episode (n)">
               <SkipForward className="h-6 w-6 fill-white/90" />
             </button>
           )}
 
           <div className="group/vol flex items-center gap-2">
-            <button onClick={toggleMute} className="text-white">
+            <button onClick={toggleMute} className="text-white" title="Mute (m)">
               {muted || volume === 0 ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
             </button>
             <input
@@ -334,11 +422,54 @@ export function VideoPlayer({
             />
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-3 sm:gap-4">
+            {/* subtitles */}
+            <div className="relative">
+              <button
+                onClick={() => (subUrl ? setSubsOn((v) => !v) : subFileRef.current?.click())}
+                onContextMenu={(e) => { e.preventDefault(); subFileRef.current?.click(); }}
+                className={cn("transition-transform hover:scale-110", subUrl && subsOn ? "text-amber-glow" : "text-white/90")}
+                title={subUrl ? "Toggle subtitles (c) · right-click to load another" : "Load subtitles (.srt/.vtt)"}
+              >
+                <Captions className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* playback speed */}
+            {!isLive && (
+              <div className="relative">
+                <button
+                  onClick={() => setSpeedMenu((v) => !v)}
+                  className={cn("flex items-center gap-1 transition-transform hover:scale-110", speed !== 1 ? "text-amber-glow" : "text-white/90")}
+                  title="Playback speed"
+                >
+                  <Gauge className="h-6 w-6" />
+                  {speed !== 1 && <span className="text-xs font-semibold">{speed}x</span>}
+                </button>
+                {speedMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setSpeedMenu(false)} />
+                    <div className="absolute bottom-10 right-0 z-20 w-28 overflow-hidden rounded-xl glass py-1 text-sm shadow-2xl">
+                      {SPEEDS.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => applySpeed(s)}
+                          className="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-white/10"
+                        >
+                          <span>{s === 1 ? "Normal" : `${s}x`}</span>
+                          {speed === s && <Check className="h-3.5 w-3.5 text-amber-glow" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <button onClick={togglePip} className="text-white/90 transition-transform hover:scale-110" title="Picture in picture">
               <PictureInPicture2 className="h-6 w-6" />
             </button>
-            <button onClick={toggleFs} className="text-white/90 transition-transform hover:scale-110" title="Fullscreen">
+            <button onClick={toggleFs} className="text-white/90 transition-transform hover:scale-110" title="Fullscreen (f)">
               {fullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
             </button>
           </div>
