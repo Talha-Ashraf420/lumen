@@ -441,8 +441,8 @@ export function VideoPlayer({
             </button>
           )}
 
-          <div className="group/vol flex items-center gap-2">
-            <button onClick={toggleMute} className="text-white" title="Mute (m)">
+          <div className="flex items-center gap-2.5">
+            <button onClick={toggleMute} className="shrink-0 text-white" title="Mute (m)">
               {muted || volume === 0 ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
             </button>
             <input
@@ -452,7 +452,8 @@ export function VideoPlayer({
               step={0.05}
               value={muted ? 0 : volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
-              className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/25 accent-iris-400 transition-all group-hover/vol:w-20 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+              aria-label="Volume"
+              className="h-1 w-16 cursor-pointer appearance-none rounded-full bg-white/25 accent-iris-400 sm:w-24 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
             />
           </div>
 
