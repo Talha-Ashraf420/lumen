@@ -6,6 +6,7 @@ import type { Category } from "@/lib/xtream/types";
 import { FilterBar } from "./FilterBar";
 import { PosterCard, type PosterItem } from "./PosterCard";
 import { PosterGridSkeleton } from "@/components/ui/Skeleton";
+import { useUI, DEFAULT_FILTER } from "@/store/ui";
 import { sortItems, type SortKey, cleanName } from "@/lib/utils";
 
 const PAGE = 60;
@@ -17,29 +18,40 @@ interface Sortable {
 }
 
 export function CatalogBrowser<T extends Sortable>({
+  sectionKey,
   categories,
   useItems,
   toPoster,
   hrefFor,
   emptyLabel = "No titles found.",
 }: {
+  sectionKey: string;
   categories: Category[];
   useItems: (categoryId?: string, enabled?: boolean) => UseQueryResult<T[]>;
   toPoster: (item: T) => PosterItem;
   hrefFor: (item: T) => string;
   emptyLabel?: string;
 }) {
-  // null = not chosen yet; default to the first category (fast) instead of "all" (slow).
-  const [category, setCategory] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortKey>("added");
-  const [query, setQuery] = useState("");
+  // Filter state is persisted per-section so it survives navigation/playback/reload.
+  const filter = useUI((s) => s.filters[sectionKey] ?? DEFAULT_FILTER);
+  const patchFilter = useUI((s) => s.patchFilter);
+  const { category: storedCategory, sort, query } = filter;
+
   const [visible, setVisible] = useState(PAGE);
 
-  useEffect(() => {
-    if (category === null && categories.length > 0) setCategory(categories[0].category_id);
-  }, [categories, category]);
+  const setCategory = (id: string) => patchFilter(sectionKey, { category: id });
+  const setSort = (s: SortKey) => patchFilter(sectionKey, { sort: s });
+  const setQuery = (q: string) => patchFilter(sectionKey, { query: q });
 
-  const ready = category !== null;
+  // "" = unset → default to the first category (fast) instead of "all" (slow).
+  useEffect(() => {
+    if (!storedCategory && categories.length > 0) {
+      patchFilter(sectionKey, { category: categories[0].category_id });
+    }
+  }, [categories, storedCategory, sectionKey, patchFilter]);
+
+  const category = storedCategory || null;
+  const ready = !!category;
   const fetchCat = category && category !== "all" ? category : undefined;
   const { data, isLoading, isError, error } = useItems(fetchCat, ready);
 

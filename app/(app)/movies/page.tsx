@@ -13,6 +13,7 @@ export default function MoviesPage() {
     <>
       <TopBar title="Movies" />
       <CatalogBrowser<VodStream>
+        sectionKey="movies"
         categories={cats}
         useItems={useVodStreams}
         toPoster={(m) => ({

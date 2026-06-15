@@ -1,19 +1,26 @@
 "use client";
 
-import { useMemo, useState, useEffect, Suspense } from "react";
+import { useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search as SearchIcon } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { PosterCard } from "@/components/catalog/PosterCard";
 import { PosterGridSkeleton } from "@/components/ui/Skeleton";
 import { useVodStreams, useSeriesList, useLiveStreams } from "@/lib/hooks";
+import { useUI } from "@/store/ui";
 import { cleanName, yearFrom } from "@/lib/utils";
 
 function SearchInner() {
   const params = useSearchParams();
-  const initial = params.get("q") ?? "";
-  const [q, setQ] = useState(initial);
-  useEffect(() => setQ(initial), [initial]);
+  const urlQuery = params.get("q") ?? "";
+  // Search term is persisted, but a ?q= deep link (e.g. from the top bar) wins.
+  const q = useUI((s) => s.searchQuery);
+  const setSearchQuery = useUI((s) => s.setSearchQuery);
+  const setQ = setSearchQuery;
+  useEffect(() => {
+    if (urlQuery && urlQuery !== q) setSearchQuery(urlQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlQuery]);
 
   const movies = useVodStreams();
   const series = useSeriesList();

@@ -8,6 +8,7 @@ import { FilterBar } from "./FilterBar";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { PosterGridSkeleton } from "@/components/ui/Skeleton";
 import { useLibrary } from "@/store/library";
+import { useUI, DEFAULT_FILTER } from "@/store/ui";
 import { sortItems, type SortKey, cleanName, cn } from "@/lib/utils";
 import type { LiveStream } from "@/lib/xtream/types";
 
@@ -15,11 +16,16 @@ const PAGE = 80;
 
 export function LiveBrowser() {
   const { data: cats = [] } = useLiveCategories();
-  const [category, setCategory] = useState("all");
-  const [sort, setSort] = useState<SortKey>("az");
-  const [query, setQuery] = useState("");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const filter = useUI((s) => s.filters.live ?? DEFAULT_FILTER);
+  const patchFilter = useUI((s) => s.patchFilter);
+  const category = filter.category || "all"; // live defaults to All (its full list is small)
+  const { sort, query, view } = filter;
   const [visible, setVisible] = useState(PAGE);
+
+  const setCategory = (id: string) => patchFilter("live", { category: id });
+  const setSort = (s: SortKey) => patchFilter("live", { sort: s });
+  const setQuery = (q: string) => patchFilter("live", { query: q });
+  const setView = (v: "grid" | "list") => patchFilter("live", { view: v });
 
   const { data, isLoading, isError, error } = useLiveStreams(category === "all" ? undefined : category);
 

@@ -13,6 +13,7 @@ export default function SeriesPage() {
     <>
       <TopBar title="Series" />
       <CatalogBrowser<Series>
+        sectionKey="series"
         categories={cats}
         useItems={useSeriesList}
         toPoster={(s) => ({
