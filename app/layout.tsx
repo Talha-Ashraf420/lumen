@@ -22,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">
-        <NextTopLoader color="#e8b04b" height={3} showSpinner={false} shadow="0 0 10px #e8b04b,0 0 5px #e8b04b" />
+        <NextTopLoader color="#A6B0FF" height={3} showSpinner={false} shadow="0 0 10px #A6B0FF,0 0 5px #A6B0FF" />
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -17,9 +17,9 @@ const NAV = [
 export function Sidebar() {
   const path = usePathname();
   return (
-    <aside className="sticky top-0 z-30 hidden h-dvh w-[84px] shrink-0 flex-col items-center gap-1 border-r border-white/5 bg-ink-950/60 py-6 backdrop-blur-xl lg:flex">
+    <aside className="sticky top-0 z-30 hidden h-dvh w-[84px] shrink-0 flex-col items-center gap-1 border-r border-white/8 bg-ink-950/40 py-6 backdrop-blur-2xl lg:flex">
       <Link href="/" className="mb-6 flex flex-col items-center gap-1">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-amber-soft to-amber-deep font-black text-ink-950 shadow-lg">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-iris-300 via-iris-400 to-mint-400 font-black text-ink-950 shadow-lg shadow-iris-400/30">
           L
         </span>
       </Link>
@@ -32,16 +32,16 @@ export function Sidebar() {
             title={label}
             className={cn(
               "group relative flex w-full flex-col items-center gap-1 px-2 py-3 text-[10px] font-medium transition-colors",
-              active ? "text-amber-glow" : "text-fog-500 hover:text-fog-300",
+              active ? "text-iris-400" : "text-fog-500 hover:text-fog-300",
             )}
           >
             {active && (
-              <span className="absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-amber-glow" />
+              <span className="absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-iris-400" />
             )}
             <Icon
               className={cn(
                 "h-6 w-6 transition-transform group-hover:scale-110",
-                active && "drop-shadow-[0_0_8px_rgba(232,176,75,0.5)]",
+                active && "drop-shadow-[0_0_10px_rgba(166,176,255,0.6)]",
               )}
               strokeWidth={active ? 2.4 : 1.8}
             />
@@ -66,7 +66,7 @@ export function MobileNav() {
             href={href}
             className={cn(
               "flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px]",
-              active ? "text-amber-glow" : "text-fog-500",
+              active ? "text-iris-400" : "text-fog-500",
             )}
           >
             <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.8} />

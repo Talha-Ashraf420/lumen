@@ -37,18 +37,18 @@ export function PosterCard({
         transitionSpeed={500}
         glareEnable
         glareMaxOpacity={0.18}
-        glareColor="#f0c674"
+        glareColor="#A6B0FF"
         glarePosition="all"
         glareBorderRadius="14px"
-        className="relative overflow-hidden rounded-[--radius-card] bg-ink-850 shadow-lg shadow-black/40 ring-1 ring-white/5 transition-shadow duration-300 group-hover:shadow-2xl group-hover:shadow-amber-glow/20 group-focus-visible:focus-ring"
+        className="relative overflow-hidden rounded-[--radius-card] bg-ink-850 shadow-lg shadow-black/40 ring-1 ring-white/5 transition-shadow duration-300 group-hover:shadow-2xl group-hover:shadow-iris-400/20 group-focus-visible:focus-ring"
       >
         <div className="relative aspect-[2/3] w-full overflow-hidden">
           <SmartImage src={item.poster} alt={item.name} rounded="rounded-none" className="h-full w-full" />
           <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/10 to-transparent opacity-80" />
 
           {rating > 0 && (
-            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-ink-950/70 px-1.5 py-0.5 text-[11px] font-semibold text-amber-soft backdrop-blur">
-              <Star className="h-3 w-3 fill-amber-soft" /> {rating.toFixed(1)}
+            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-ink-950/70 px-1.5 py-0.5 text-[11px] font-semibold text-iris-300 backdrop-blur">
+              <Star className="h-3 w-3 fill-iris-300" /> {rating.toFixed(1)}
             </span>
           )}
 
@@ -56,14 +56,14 @@ export function PosterCard({
             className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             style={{ transform: "translateZ(40px)" }}
           >
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-amber-glow text-ink-950 shadow-lg shadow-amber-glow/40">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-iris-400 text-ink-950 shadow-lg shadow-iris-400/40">
               <Play className="h-5 w-5 translate-x-0.5 fill-ink-950" />
             </span>
           </span>
 
           {item.progress !== undefined && item.progress > 0 && (
             <span className="absolute inset-x-0 bottom-0 h-1 bg-ink-950/60">
-              <span className="block h-full bg-amber-glow" style={{ width: `${Math.min(100, item.progress * 100)}%` }} />
+              <span className="block h-full bg-iris-400" style={{ width: `${Math.min(100, item.progress * 100)}%` }} />
             </span>
           )}
         </div>

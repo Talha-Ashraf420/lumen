@@ -91,7 +91,7 @@ function ViewBtn({ active, onClick, children }: { active: boolean; onClick: () =
       onClick={onClick}
       className={cn(
         "grid h-8 w-8 place-items-center rounded-full transition-colors",
-        active ? "bg-amber-glow text-ink-950" : "text-fog-400 hover:text-foreground",
+        active ? "bg-iris-400 text-ink-950" : "text-fog-400 hover:text-foreground",
       )}
     >
       {children}
@@ -109,7 +109,7 @@ function ChannelTile({ channel }: { channel: LiveStream }) {
   return (
     <Link
       href={watchHref(channel)}
-      className="group relative flex flex-col items-center gap-2.5 rounded-[--radius-card] border border-white/5 bg-ink-850 p-4 transition-all hover:-translate-y-0.5 hover:glow-amber"
+      className="group relative flex flex-col items-center gap-2.5 rounded-[--radius-card] border border-white/5 bg-ink-850 p-4 transition-all hover:-translate-y-0.5 hover:glow-iris"
     >
       <button
         onClick={(e) => {
@@ -123,10 +123,10 @@ function ChannelTile({ channel }: { channel: LiveStream }) {
         }}
         className={cn(
           "absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-ink-950/60 transition-colors",
-          fav ? "text-amber-glow" : "text-fog-500 opacity-0 group-hover:opacity-100 hover:text-foreground",
+          fav ? "text-iris-400" : "text-fog-500 opacity-0 group-hover:opacity-100 hover:text-foreground",
         )}
       >
-        <Heart className={cn("h-3.5 w-3.5", fav && "fill-amber-glow")} />
+        <Heart className={cn("h-3.5 w-3.5", fav && "fill-iris-400")} />
       </button>
       <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-xl bg-ink-900">
         {channel.stream_icon ? (
@@ -137,7 +137,7 @@ function ChannelTile({ channel }: { channel: LiveStream }) {
       </div>
       <p className="line-clamp-2 text-center text-sm font-medium leading-snug">{cleanName(channel.name)}</p>
       <span className="absolute inset-0 grid place-items-center rounded-[--radius-card] bg-ink-950/40 opacity-0 transition-opacity group-hover:opacity-100">
-        <span className="grid h-11 w-11 place-items-center rounded-full bg-amber-glow text-ink-950">
+        <span className="grid h-11 w-11 place-items-center rounded-full bg-iris-400 text-ink-950">
           <Play className="h-5 w-5 translate-x-0.5 fill-ink-950" />
         </span>
       </span>
@@ -185,9 +185,9 @@ function ChannelRow({ channel }: { channel: LiveStream }) {
         <p className="truncate font-medium">{cleanName(channel.name)}</p>
         {now ? (
           <>
-            <p className="truncate text-xs text-amber-soft">{now.title}</p>
+            <p className="truncate text-xs text-iris-300">{now.title}</p>
             <div className="mt-1 h-1 w-full max-w-xs overflow-hidden rounded-full bg-ink-700">
-              <div className="h-full bg-amber-glow" style={{ width: `${progress * 100}%` }} />
+              <div className="h-full bg-iris-400" style={{ width: `${progress * 100}%` }} />
             </div>
           </>
         ) : (
@@ -195,7 +195,7 @@ function ChannelRow({ channel }: { channel: LiveStream }) {
         )}
       </div>
       {next && <p className="hidden w-40 shrink-0 truncate text-right text-xs text-fog-500 md:block">Next: {next.title}</p>}
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-800 text-fog-400 transition-colors group-hover:bg-amber-glow group-hover:text-ink-950">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink-800 text-fog-400 transition-colors group-hover:bg-iris-400 group-hover:text-ink-950">
         <Play className="h-4 w-4 translate-x-0.5" />
       </span>
     </Link>

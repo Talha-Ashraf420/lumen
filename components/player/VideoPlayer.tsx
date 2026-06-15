@@ -310,7 +310,7 @@ export function VideoPlayer({
       {/* buffering */}
       {buffering && !error && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
-          <Loader2 className="h-12 w-12 animate-spin text-amber-glow" />
+          <Loader2 className="h-12 w-12 animate-spin text-iris-400" />
         </div>
       )}
 
@@ -318,7 +318,7 @@ export function VideoPlayer({
       {error && (
         <div className="absolute inset-0 grid place-items-center bg-ink-950/90 px-6 text-center">
           <div className="max-w-md">
-            <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-amber-glow" />
+            <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-iris-400" />
             <p className="text-lg font-semibold">Can’t play this stream</p>
             <p className="mt-2 text-sm text-fog-400">{error}</p>
             <button
@@ -372,9 +372,9 @@ export function VideoPlayer({
               step={1}
               value={current}
               onChange={(e) => seek(Number(e.target.value))}
-              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-amber-glow [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-glow"
+              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-iris-400 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-iris-400"
               style={{
-                background: `linear-gradient(to right, var(--color-amber-glow) ${
+                background: `linear-gradient(to right, var(--color-iris-400) ${
                   duration ? (current / duration) * 100 : 0
                 }%, rgba(255,255,255,0.2) 0%)`,
               }}
@@ -418,7 +418,7 @@ export function VideoPlayer({
               step={0.05}
               value={muted ? 0 : volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
-              className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/25 accent-amber-glow transition-all group-hover/vol:w-20 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+              className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/25 accent-iris-400 transition-all group-hover/vol:w-20 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
             />
           </div>
 
@@ -428,7 +428,7 @@ export function VideoPlayer({
               <button
                 onClick={() => (subUrl ? setSubsOn((v) => !v) : subFileRef.current?.click())}
                 onContextMenu={(e) => { e.preventDefault(); subFileRef.current?.click(); }}
-                className={cn("transition-transform hover:scale-110", subUrl && subsOn ? "text-amber-glow" : "text-white/90")}
+                className={cn("transition-transform hover:scale-110", subUrl && subsOn ? "text-iris-400" : "text-white/90")}
                 title={subUrl ? "Toggle subtitles (c) · right-click to load another" : "Load subtitles (.srt/.vtt)"}
               >
                 <Captions className="h-6 w-6" />
@@ -440,7 +440,7 @@ export function VideoPlayer({
               <div className="relative">
                 <button
                   onClick={() => setSpeedMenu((v) => !v)}
-                  className={cn("flex items-center gap-1 transition-transform hover:scale-110", speed !== 1 ? "text-amber-glow" : "text-white/90")}
+                  className={cn("flex items-center gap-1 transition-transform hover:scale-110", speed !== 1 ? "text-iris-400" : "text-white/90")}
                   title="Playback speed"
                 >
                   <Gauge className="h-6 w-6" />
@@ -457,7 +457,7 @@ export function VideoPlayer({
                           className="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-white/10"
                         >
                           <span>{s === 1 ? "Normal" : `${s}x`}</span>
-                          {speed === s && <Check className="h-3.5 w-3.5 text-amber-glow" />}
+                          {speed === s && <Check className="h-3.5 w-3.5 text-iris-400" />}
                         </button>
                       ))}
                     </div>

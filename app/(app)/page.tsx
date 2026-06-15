@@ -2,23 +2,24 @@
 
 import { useMemo } from "react";
 import { TopBar } from "@/components/layout/TopBar";
-import { Hero, type HeroItem } from "@/components/catalog/Hero";
+import { KineticTitle } from "@/components/ui/KineticTitle";
+import { FeaturedTile, NavTile, ContinueTile } from "@/components/catalog/Bento";
+import { type HeroItem } from "@/components/catalog/Hero";
 import { Shelf } from "@/components/catalog/Shelf";
 import { PosterCard } from "@/components/catalog/PosterCard";
 import { PosterSkeletonRow, Skeleton } from "@/components/ui/Skeleton";
 import { useVodCategories, useSeriesCategories, useVodStreams, useSeriesList } from "@/lib/hooks";
 import { useLibrary, continueWatching } from "@/store/library";
-import { sortItems, yearFrom, ratingNum, cleanName } from "@/lib/utils";
+import { sortItems, yearFrom, ratingNum } from "@/lib/utils";
 
 const CARD = "w-[140px] shrink-0 sm:w-[165px]";
 
 export default function HomePage() {
   const vodCats = useVodCategories();
   const seriesCats = useSeriesCategories();
-  const { progress, favourites } = useLibrary();
+  const { progress } = useLibrary();
   const cw = useMemo(() => continueWatching(progress), [progress]);
 
-  // Hero comes from the first series category (fast) — series carry backdrops.
   const heroCatId = seriesCats.data?.[0]?.category_id;
   const heroSeries = useSeriesList(heroCatId);
 
@@ -39,104 +40,71 @@ export default function HomePage() {
       }));
   }, [heroSeries.data]);
 
-  // A handful of categories → fast parallel shelves (each ~400ms vs 22s for "all").
   const shelves = useMemo(() => {
     const m = (vodCats.data ?? []).slice(0, 6).map((c) => ({ kind: "movie" as const, cat: c }));
     const s = (seriesCats.data ?? []).slice(0, 5).map((c) => ({ kind: "series" as const, cat: c }));
-    // interleave so the page mixes films & shows
     const out: Array<{ kind: "movie" | "series"; cat: { category_id: string; category_name: string } }> = [];
-    const max = Math.max(m.length, s.length);
-    for (let i = 0; i < max; i++) {
+    for (let i = 0; i < Math.max(m.length, s.length); i++) {
       if (m[i]) out.push(m[i]);
       if (s[i]) out.push(s[i]);
     }
     return out;
   }, [vodCats.data, seriesCats.data]);
 
-  const loadingHero = seriesCats.isLoading || heroSeries.isLoading;
+  const heroLoading = seriesCats.isLoading || heroSeries.isLoading;
 
   return (
     <>
-      <TopBar title="Home" />
+      <TopBar title="Lumen" />
 
-      {loadingHero ? (
-        <Skeleton className="h-[52vh] min-h-[360px] w-full rounded-none" />
-      ) : heroItems.length > 0 ? (
-        <Hero items={heroItems} />
-      ) : null}
+      <div className="space-y-8 px-5 pt-6 sm:px-8">
+        <KineticTitle eyebrow="Welcome back" text="What will you watch tonight?" />
 
-      <div className="space-y-9 py-8">
-        {cw.length > 0 && (
-          <Shelf title="Continue Watching">
-            {cw.map((p) => (
-              <PosterCard
-                key={p.key}
-                className={CARD}
-                item={{
-                  id: p.key,
-                  name: p.title,
-                  poster: p.poster,
-                  progress: p.duration > 0 ? p.position / p.duration : 0,
-                  subtitle: p.kind === "series" ? "Episode" : "Movie",
-                }}
-                href={`/watch?type=${p.kind}&id=${p.id}&ext=${p.ext}&title=${encodeURIComponent(p.title)}&resume=${Math.floor(p.position)}${p.seriesId ? `&series=${p.seriesId}` : ""}`}
-              />
-            ))}
-          </Shelf>
-        )}
+        {/* bento mosaic */}
+        <div className="grid auto-rows-[150px] grid-cols-2 gap-4 lg:grid-cols-6">
+          {heroLoading ? (
+            <Skeleton className="col-span-2 row-span-2 rounded-3xl lg:col-span-4" />
+          ) : (
+            <FeaturedTile items={heroItems} className="col-span-2 row-span-2 lg:col-span-4" />
+          )}
 
-        {favourites.live.length > 0 && (
-          <Shelf title="Favourite Channels">
-            {favourites.live.map((c) => (
-              <PosterCard
-                key={c.id}
-                className={CARD}
-                item={{ id: c.id, name: c.name, poster: c.poster, subtitle: "Live" }}
-                href={`/watch?type=live&id=${c.id}&ext=ts&title=${encodeURIComponent(cleanName(c.name))}`}
-              />
-            ))}
-          </Shelf>
-        )}
+          {cw.length > 0 ? (
+            <ContinueTile items={cw} className="col-span-2 row-span-1 lg:col-span-2" />
+          ) : (
+            <NavTile
+              href="/movies"
+              title="Movies"
+              subtitle="Browse the film library"
+              icon="film"
+              tint="iris"
+              className="col-span-2 row-span-1 lg:col-span-2"
+            />
+          )}
 
+          <NavTile href="/live" title="Live TV" subtitle="Channels & EPG" icon="live" tint="mint" className="col-span-1 row-span-1" />
+          <NavTile href="/favourites" title="My List" subtitle="Saved for later" icon="heart" tint="iris" className="col-span-1 row-span-1" />
+        </div>
+      </div>
+
+      {/* browse — full bleed, shelves self-pad */}
+      <div className="space-y-9 py-10">
         {(vodCats.isLoading || seriesCats.isLoading) && (
           <>
             <ShelfSkeleton />
             <ShelfSkeleton />
           </>
         )}
-
         {shelves.map(({ kind, cat }) => (
           <CategoryShelf key={`${kind}-${cat.category_id}`} kind={kind} catId={cat.category_id} title={cat.category_name} />
         ))}
-
-        {(favourites.movie.length > 0 || favourites.series.length > 0) && (
-          <Shelf title="My List">
-            {[...favourites.movie.map((m) => ({ ...m, kind: "movie" as const })), ...favourites.series.map((s) => ({ ...s, kind: "series" as const }))].map((it) => (
-              <PosterCard
-                key={`${it.kind}-${it.id}`}
-                className={CARD}
-                item={{ id: it.id, name: it.name, poster: it.poster }}
-                href={it.kind === "movie" ? `/movies/${it.id}` : `/series/${it.id}`}
-              />
-            ))}
-          </Shelf>
-        )}
       </div>
     </>
   );
 }
 
-function CategoryShelf({
-  kind,
-  catId,
-  title,
-}: {
-  kind: "movie" | "series";
-  catId: string;
-  title: string;
-}) {
-  const movies = useVodStreams(kind === "movie" ? catId : undefined);
-  const series = useSeriesList(kind === "series" ? catId : undefined);
+function CategoryShelf({ kind, catId, title }: { kind: "movie" | "series"; catId: string; title: string }) {
+  const movies = useVodStreams(kind === "movie" ? catId : undefined, kind === "movie");
+  const series = useSeriesList(kind === "series" ? catId : undefined, kind === "series");
   const q = kind === "movie" ? movies : series;
 
   if (q.isLoading) return <ShelfSkeleton title={title} />;

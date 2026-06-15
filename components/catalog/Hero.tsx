@@ -63,8 +63,8 @@ export function Hero({ items }: { items: HeroItem[] }) {
           </h1>
           <div className="mt-3 flex items-center gap-3 text-sm text-fog-300">
             {item.rating ? (
-              <span className="flex items-center gap-1 font-semibold text-amber-soft">
-                <Star className="h-4 w-4 fill-amber-soft" /> {item.rating.toFixed(1)}
+              <span className="flex items-center gap-1 font-semibold text-iris-300">
+                <Star className="h-4 w-4 fill-iris-300" /> {item.rating.toFixed(1)}
               </span>
             ) : null}
             {item.year && <span>{item.year}</span>}
@@ -96,7 +96,7 @@ export function Hero({ items }: { items: HeroItem[] }) {
                   onClick={() => setIdx(i)}
                   aria-label={`Go to slide ${i + 1}`}
                   className={`h-1 rounded-full transition-all ${
-                    i === idx ? "w-7 bg-amber-glow" : "w-3 bg-white/25 hover:bg-white/40"
+                    i === idx ? "w-7 bg-iris-400" : "w-3 bg-white/25 hover:bg-white/40"
                   }`}
                 />
               ))}

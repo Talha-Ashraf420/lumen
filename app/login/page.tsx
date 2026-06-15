@@ -52,13 +52,13 @@ export default function LoginPage() {
     <div className="relative grid min-h-dvh place-items-center overflow-hidden px-5 py-12">
       {/* cinematic backdrop */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-1/3 h-[60vh] w-[60vh] -translate-x-1/2 rounded-full bg-amber-glow/12 blur-[120px]" />
+        <div className="absolute left-1/2 top-1/3 h-[60vh] w-[60vh] -translate-x-1/2 rounded-full bg-iris-400/12 blur-[120px]" />
         <div className="absolute bottom-0 right-0 h-[40vh] w-[40vh] rounded-full bg-indigo-500/10 blur-[120px]" />
       </div>
 
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-soft to-amber-deep text-2xl font-black text-ink-950 shadow-xl glow-amber">
+          <span className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-iris-300 to-iris-500 text-2xl font-black text-ink-950 shadow-xl glow-iris">
             L
           </span>
           <h1 className="text-3xl font-bold tracking-tight">Lumen</h1>
@@ -75,9 +75,9 @@ export default function LoginPage() {
                 key={p.id}
                 disabled={busy}
                 onClick={() => connect(p)}
-                className="group flex w-full items-center gap-3 rounded-2xl glass p-4 text-left transition-all hover:glow-amber disabled:opacity-60"
+                className="group flex w-full items-center gap-3 rounded-2xl glass p-4 text-left transition-all hover:glow-iris disabled:opacity-60"
               >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink-700 text-amber-glow">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink-700 text-iris-400">
                   <Tv className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -97,12 +97,12 @@ export default function LoginPage() {
                 >
                   <Trash2 className="h-4 w-4" />
                 </span>
-                <ArrowRight className="h-4 w-4 text-fog-500 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-glow" />
+                <ArrowRight className="h-4 w-4 text-fog-500 transition-transform group-hover:translate-x-0.5 group-hover:text-iris-400" />
               </button>
             ))}
             <button
               onClick={() => setShowForm(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 py-3.5 text-sm text-fog-400 transition-colors hover:border-amber-glow/40 hover:text-foreground"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 py-3.5 text-sm text-fog-400 transition-colors hover:border-iris-400/40 hover:text-foreground"
             >
               <Plus className="h-4 w-4" /> Add another account
             </button>
@@ -131,7 +131,7 @@ export default function LoginPage() {
               type="submit"
               disabled={busy}
               className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-soft to-amber-deep py-3 font-semibold text-ink-950 transition-all hover:brightness-110 disabled:opacity-60",
+                "flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-iris-300 to-iris-500 py-3 font-semibold text-ink-950 transition-all hover:brightness-110 disabled:opacity-60",
               )}
             >
               {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Connect <ArrowRight className="h-4 w-4" /></>}
@@ -181,7 +181,7 @@ function Field({
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-white/8 bg-ink-900/80 px-3.5 py-2.5 text-sm text-foreground placeholder:text-fog-600 transition-colors focus:border-amber-glow/60 focus:outline-none"
+        className="w-full rounded-xl border border-white/8 bg-ink-900/80 px-3.5 py-2.5 text-sm text-foreground placeholder:text-fog-600 transition-colors focus:border-iris-400/60 focus:outline-none"
       />
     </label>
   );

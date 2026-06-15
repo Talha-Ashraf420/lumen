@@ -50,8 +50,8 @@ export default function SeriesDetailPage() {
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{cleanName(title)}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-fog-300">
         {rating > 0 && (
-          <span className="flex items-center gap-1 font-semibold text-amber-soft">
-            <Star className="h-4 w-4 fill-amber-soft" /> {rating.toFixed(1)}
+          <span className="flex items-center gap-1 font-semibold text-iris-300">
+            <Star className="h-4 w-4 fill-iris-300" /> {rating.toFixed(1)}
           </span>
         )}
         {year && <span className="flex items-center gap-1"><Calendar className="h-4 w-4" /> {year}</span>}
@@ -70,7 +70,7 @@ export default function SeriesDetailPage() {
               onClick={() => setSeason(s)}
               className={cn(
                 "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                s === activeSeason ? "bg-amber-glow text-ink-950" : "bg-ink-800 text-fog-400 hover:bg-ink-700",
+                s === activeSeason ? "bg-iris-400 text-ink-950" : "bg-ink-800 text-fog-400 hover:bg-ink-700",
               )}
             >
               Season {s}
@@ -112,7 +112,7 @@ function EpisodeRow({
       <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-lg bg-ink-900 sm:w-40">
         <SmartImage src={ep.info?.movie_image} alt={epTitle} rounded="rounded-lg" className="h-full w-full" />
         <span className="absolute inset-0 grid place-items-center bg-ink-950/30 opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-glow text-ink-950">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-iris-400 text-ink-950">
             <Play className="h-4 w-4 translate-x-0.5 fill-ink-950" />
           </span>
         </span>

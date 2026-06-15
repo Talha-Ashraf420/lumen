@@ -41,7 +41,7 @@ export function TopBar({ title }: { title?: string }) {
       </h1>
 
       <form onSubmit={submitSearch} className="ml-auto hidden sm:block">
-        <div className="group flex w-64 items-center gap-2 rounded-full border border-white/8 bg-ink-850/80 px-3.5 py-2 transition-colors focus-within:border-amber-glow/60">
+        <div className="group flex w-64 items-center gap-2 rounded-full border border-white/8 bg-ink-850/80 px-3.5 py-2 transition-colors focus-within:border-iris-400/60">
           <Search className="h-4 w-4 text-fog-500" />
           <input
             value={q}

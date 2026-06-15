@@ -44,8 +44,8 @@ export default function MovieDetailPage() {
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-fog-300">
         {rating > 0 && (
-          <span className="flex items-center gap-1 font-semibold text-amber-soft">
-            <Star className="h-4 w-4 fill-amber-soft" /> {rating.toFixed(1)}
+          <span className="flex items-center gap-1 font-semibold text-iris-300">
+            <Star className="h-4 w-4 fill-iris-300" /> {rating.toFixed(1)}
           </span>
         )}
         {year && (
@@ -64,7 +64,7 @@ export default function MovieDetailPage() {
       <div className="mt-6">
         <Link
           href={playHref}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-soft to-amber-deep px-7 py-3 font-semibold text-ink-950 transition-transform hover:scale-[1.03]"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-iris-300 to-iris-500 px-7 py-3 font-semibold text-ink-950 transition-transform hover:scale-[1.03]"
         >
           <Play className="h-5 w-5 fill-ink-950" /> {resume > 15 ? "Resume" : "Play"}
         </Link>

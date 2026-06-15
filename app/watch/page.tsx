@@ -100,7 +100,7 @@ function WatchInner() {
   if (!isLive && resolving) {
     return (
       <div className="grid h-dvh place-items-center bg-black">
-        <Loader2 className="h-10 w-10 animate-spin text-amber-glow" />
+        <Loader2 className="h-10 w-10 animate-spin text-iris-400" />
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function WatchPage() {
     <Suspense
       fallback={
         <div className="grid h-dvh place-items-center bg-black">
-          <Loader2 className="h-10 w-10 animate-spin text-amber-glow" />
+          <Loader2 className="h-10 w-10 animate-spin text-iris-400" />
         </div>
       }
     >
