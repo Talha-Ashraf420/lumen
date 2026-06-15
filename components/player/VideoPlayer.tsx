@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
   PictureInPicture2, Loader2, AlertTriangle, SkipForward, ArrowLeft,
-  RotateCcw, RotateCw, Captions, Gauge, Check,
+  RotateCcw, RotateCw, Captions, Gauge, Check, Upload,
 } from "lucide-react";
 import { attach, type EngineHandle } from "@/lib/player/engine";
 import { formatTime, cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ export function VideoPlayer({
   onBack,
   onProgress,
   onEnded,
+  subtitles = [],
 }: {
   /** Ordered candidate URLs — first is tried, next used on failure (direct → proxy). */
   sources: string[];
@@ -42,7 +43,10 @@ export function VideoPlayer({
   onBack?: () => void;
   onProgress?: (position: number, duration: number) => void;
   onEnded?: () => void;
+  /** Provider-supplied subtitle tracks (proxied .vtt URLs). */
+  subtitles?: Array<{ label: string; src: string; lang?: string }>;
 }) {
+  const extSubs = subtitles;
   const videoRef = useRef<HTMLVideoElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
@@ -63,7 +67,9 @@ export function VideoPlayer({
   const [speedMenu, setSpeedMenu] = useState(false);
   const [subUrl, setSubUrl] = useState<string | null>(null);
   const [subName, setSubName] = useState<string | null>(null);
-  const [subsOn, setSubsOn] = useState(true);
+  const [capMenu, setCapMenu] = useState(false);
+  const [trackList, setTrackList] = useState<Array<{ index: number; label: string }>>([]);
+  const [activeTrack, setActiveTrack] = useState<number>(-1); // -1 = off
 
   const src = sources[srcIdx] ?? sources[0];
 
@@ -226,23 +232,46 @@ export function VideoPlayer({
         return url;
       });
       setSubName(file.name);
-      setSubsOn(true);
+      // select the newly added (last) track shortly after it mounts
+      setTimeout(() => {
+        const v = videoRef.current;
+        if (v && v.textTracks.length) selectTrack(v.textTracks.length - 1);
+      }, 250);
     };
     reader.readAsText(file);
   };
 
-  // show/hide the loaded text track
+  const selectTrack = useCallback((idx: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    for (let i = 0; i < v.textTracks.length; i++) {
+      v.textTracks[i].mode = i === idx ? "showing" : "disabled";
+    }
+    setActiveTrack(idx);
+  }, []);
+
+  // keep the visible track list in sync with the <video>'s text tracks
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    const apply = () => {
-      const tracks = v.textTracks;
-      for (let i = 0; i < tracks.length; i++) tracks[i].mode = subsOn && subUrl ? "showing" : "hidden";
+    const refresh = () => {
+      const list: Array<{ index: number; label: string }> = [];
+      for (let i = 0; i < v.textTracks.length; i++) {
+        const t = v.textTracks[i];
+        list.push({ index: i, label: t.label || t.language || `Track ${i + 1}` });
+      }
+      setTrackList(list);
     };
-    apply();
-    const t = setTimeout(apply, 300); // tracks attach asynchronously
-    return () => clearTimeout(t);
-  }, [subUrl, subsOn, src]);
+    refresh();
+    const t = setTimeout(refresh, 400);
+    v.textTracks.addEventListener?.("addtrack", refresh);
+    v.textTracks.addEventListener?.("removetrack", refresh);
+    return () => {
+      clearTimeout(t);
+      v.textTracks.removeEventListener?.("addtrack", refresh);
+      v.textTracks.removeEventListener?.("removetrack", refresh);
+    };
+  }, [subUrl, extSubs, src]);
 
   const showControls = useCallback(() => {
     setControlsOn(true);
@@ -264,7 +293,9 @@ export function VideoPlayer({
         case "ArrowDown": changeVolume(Math.max(0, volume - 0.1)); break;
         case "f": toggleFs(); break;
         case "m": toggleMute(); break;
-        case "c": if (subUrl) setSubsOn((v) => !v); break;
+        case "c":
+          if (trackList.length) selectTrack(activeTrack >= 0 ? -1 : 0);
+          break;
         case "n": if (hasNext) onNext?.(); break;
         case "Escape": if (!document.fullscreenElement) onBack?.(); break;
       }
@@ -272,7 +303,7 @@ export function VideoPlayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [current, volume, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, subUrl, hasNext, onNext]);
+  }, [current, volume, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, trackList, activeTrack, selectTrack, hasNext, onNext]);
 
   return (
     <div
@@ -286,12 +317,15 @@ export function VideoPlayer({
     >
       <video
         ref={videoRef}
-        className="h-full w-full"
+        className="absolute inset-0 h-full w-full object-contain"
         playsInline
         onClick={togglePlay}
         onDoubleClick={toggleFs}
       >
-        {subUrl && <track kind="subtitles" src={subUrl} label={subName || "Subtitles"} default />}
+        {extSubs.map((s, i) => (
+          <track key={`ext-${i}`} kind="subtitles" src={s.src} label={s.label} srcLang={s.lang} />
+        ))}
+        {subUrl && <track kind="subtitles" src={subUrl} label={subName || "Loaded file"} />}
       </video>
 
       {/* hidden subtitle file picker */}
@@ -423,16 +457,50 @@ export function VideoPlayer({
           </div>
 
           <div className="ml-auto flex items-center gap-3 sm:gap-4">
-            {/* subtitles */}
+            {/* subtitles / captions menu */}
             <div className="relative">
               <button
-                onClick={() => (subUrl ? setSubsOn((v) => !v) : subFileRef.current?.click())}
-                onContextMenu={(e) => { e.preventDefault(); subFileRef.current?.click(); }}
-                className={cn("transition-transform hover:scale-110", subUrl && subsOn ? "text-iris-400" : "text-white/90")}
-                title={subUrl ? "Toggle subtitles (c) · right-click to load another" : "Load subtitles (.srt/.vtt)"}
+                onClick={() => setCapMenu((v) => !v)}
+                className={cn("transition-transform hover:scale-110", activeTrack >= 0 ? "text-iris-400" : "text-white/90")}
+                title="Subtitles (c)"
               >
                 <Captions className="h-6 w-6" />
               </button>
+              {capMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setCapMenu(false)} />
+                  <div className="absolute bottom-10 right-0 z-20 max-h-72 w-56 overflow-y-auto rounded-xl glass py-1 text-sm shadow-2xl">
+                    <p className="px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-fog-500">Subtitles</p>
+                    <button
+                      onClick={() => { selectTrack(-1); setCapMenu(false); }}
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-white/10"
+                    >
+                      <span>Off</span>
+                      {activeTrack === -1 && <Check className="h-3.5 w-3.5 text-iris-400" />}
+                    </button>
+                    {trackList.map((t) => (
+                      <button
+                        key={t.index}
+                        onClick={() => { selectTrack(t.index); setCapMenu(false); }}
+                        className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-white/10"
+                      >
+                        <span className="truncate">{t.label}</span>
+                        {activeTrack === t.index && <Check className="h-3.5 w-3.5 shrink-0 text-iris-400" />}
+                      </button>
+                    ))}
+                    {trackList.length === 0 && (
+                      <p className="px-3 py-1.5 text-xs text-fog-500">No embedded captions found.</p>
+                    )}
+                    <div className="my-1 h-px bg-white/10" />
+                    <button
+                      onClick={() => { subFileRef.current?.click(); setCapMenu(false); }}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-iris-300 hover:bg-white/10"
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Load from file…
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* playback speed */}
