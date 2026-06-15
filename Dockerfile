@@ -18,6 +18,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV STANDALONE_BUILD=1
 RUN npm run build
 
 # ---- runtime ----
