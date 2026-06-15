@@ -37,6 +37,7 @@ export async function GET(req: Request) {
   const range = req.headers.get("range");
   if (range) headers["Range"] = range;
 
+  const t0 = Date.now();
   let upstream: Response;
   try {
     upstream = await fetch(upstreamUrl, {
@@ -47,8 +48,12 @@ export async function GET(req: Request) {
       signal: req.signal,
     });
   } catch (err) {
+    console.log(`[STREAM] ${type}/${id} PROXY upstream FETCH FAILED after ${Date.now() - t0}ms: ${(err as Error).message}`);
     return new Response(`Upstream fetch failed: ${(err as Error).message}`, { status: 502 });
   }
+  console.log(
+    `[STREAM] ${type}/${id} PROXY status=${upstream.status} ttfb=${Date.now() - t0}ms range=${range || "none"} ct=${upstream.headers.get("content-type") || "?"}`,
+  );
 
   if (!upstream.ok && upstream.status !== 206) {
     return new Response(`Upstream returned ${upstream.status}`, { status: upstream.status });

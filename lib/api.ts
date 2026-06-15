@@ -79,16 +79,20 @@ export function streamSrc(kind: StreamKind, id: string | number, ext = "ts"): st
   return `/api/stream?type=${kind}&id=${id}&ext=${encodeURIComponent(ext)}`;
 }
 
-/** Resolve the direct provider URL for fast native VOD playback. */
-export async function resolveSrc(kind: StreamKind, id: string | number, ext: string): Promise<string | null> {
+/** Resolve the direct provider URL + whether direct browser playback is viable. */
+export async function resolveSrc(
+  kind: StreamKind,
+  id: string | number,
+  ext: string,
+): Promise<{ url: string | null; directOk: boolean }> {
   try {
     const res = await fetch(`/api/resolve?type=${kind}&id=${id}&ext=${encodeURIComponent(ext)}`, {
       credentials: "same-origin",
     });
-    if (!res.ok) return null;
-    const { url } = await res.json();
-    return url ?? null;
+    if (!res.ok) return { url: null, directOk: false };
+    const { url, directOk } = await res.json();
+    return { url: url ?? null, directOk: !!directOk };
   } catch {
-    return null;
+    return { url: null, directOk: false };
   }
 }

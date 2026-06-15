@@ -37,8 +37,9 @@ function WatchInner() {
   const nextEp = currentIdx >= 0 ? flatEpisodes[currentIdx + 1] : undefined;
   const poster = type === "series" ? seriesInfo?.info?.cover : undefined;
 
-  // VOD plays directly from the provider (fast); live must use the proxy (MSE/CORS).
-  const { data: directUrl, isLoading: resolving } = useQuery({
+  // VOD plays directly from the provider when that's viable (fast); otherwise
+  // we go straight to the proxy. Live always uses the proxy (MSE/CORS).
+  const { data: resolved, isLoading: resolving } = useQuery({
     queryKey: ["resolve", type, id, ext],
     queryFn: () => resolveSrc(type, id, ext),
     enabled: !isLive && !!id,
@@ -48,8 +49,10 @@ function WatchInner() {
   const sources = useMemo(() => {
     const proxy = streamSrc(type, id, ext);
     if (isLive) return [proxy];
-    return directUrl ? [directUrl, proxy] : [proxy];
-  }, [isLive, type, id, ext, directUrl]);
+    // direct first only when the probe says the provider serves browsers; else proxy-first.
+    if (resolved?.url && resolved.directOk) return [resolved.url, proxy];
+    return [proxy, ...(resolved?.url ? [resolved.url] : [])];
+  }, [isLive, type, id, ext, resolved]);
 
   // mark live channels recently-watched once
   const recentedRef = useRef(false);
