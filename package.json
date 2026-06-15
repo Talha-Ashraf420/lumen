@@ -2,6 +2,23 @@
   "name": "lumen",
   "version": "0.1.0",
   "private": true,
+  "description": "A cinematic, self-hosted Xtream Codes / IPTV web player — Live TV, Movies & Series — built with Next.js.",
+  "license": "MIT",
+  "author": "Talha Ashraf",
+  "homepage": "https://github.com/Talha-Ashraf420/lumen#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Talha-Ashraf420/lumen.git"
+  },
+  "keywords": [
+    "iptv",
+    "xtream-codes",
+    "m3u",
+    "video-player",
+    "nextjs",
+    "live-tv",
+    "self-hosted"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
