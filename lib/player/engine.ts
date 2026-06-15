@@ -11,7 +11,9 @@ export interface EngineHandle {
 const NATIVE_OK = ["mp4", "m4v", "mov", "webm", "ogg"];
 const RISKY = ["mkv", "avi", "wmv", "flv", "ts"]; // browser-native support is unreliable
 
-export function pickEngine(ext: string, isLive: boolean): EngineKind {
+export function pickEngine(url: string, ext: string, isLive: boolean): EngineKind {
+  const u = url.toLowerCase();
+  if (u.includes("/api/hls") || /\.m3u8(\?|$)/.test(u)) return "hls";
   const e = ext.toLowerCase().replace(/^\./, "");
   if (e === "m3u8") return "hls";
   if (isLive || e === "ts") return "mpegts";
@@ -24,19 +26,40 @@ export async function attach(
   video: HTMLVideoElement,
   opts: { url: string; ext: string; isLive: boolean },
 ): Promise<EngineHandle> {
-  const kind = pickEngine(opts.ext, opts.isLive);
+  const kind = pickEngine(opts.url, opts.ext, opts.isLive);
 
   if (kind === "hls") {
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = opts.url; // Safari native HLS
-      return { kind: "native", destroy: () => void (video.src = "") };
-    }
     const Hls = (await import("hls.js")).default;
     if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: opts.isLive });
+      // Buffer + retry tuning for smooth, self-healing live playback.
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false, // favour stability over latency for IPTV
+        backBufferLength: 30,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingMaxRetry: 6,
+        fragLoadingMaxRetry: 8,
+        fragLoadingRetryDelay: 500,
+        ...(opts.isLive ? { liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 10 } : {}),
+      });
+
+      // auto-recover instead of stalling on transient network/media errors
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+        else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+        else hls.destroy();
+      });
+
       hls.loadSource(opts.url);
       hls.attachMedia(video);
       return { kind: "hls", destroy: () => hls.destroy() };
+    }
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = opts.url; // Safari native HLS
+      return { kind: "native", destroy: () => void (video.src = "") };
     }
     video.src = opts.url;
     return { kind: "native", destroy: () => void (video.src = "") };

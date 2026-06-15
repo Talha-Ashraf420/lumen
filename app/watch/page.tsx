@@ -69,7 +69,8 @@ function WatchInner() {
 
   const sources = useMemo(() => {
     const proxy = streamSrc(type, id, ext);
-    if (isLive) return [proxy];
+    // Live: HLS first (smooth, self-healing, adaptive) → raw MPEG-TS proxy fallback.
+    if (isLive) return [`/api/hls?id=${id}`, proxy];
     // VOD chain: [direct (only if the probe says browsers are allowed)] → proxy →
     // ffmpeg remux (handles MKV/AVI the browser can't decode natively).
     const transcode = transcodeSrc(type, id, ext);
