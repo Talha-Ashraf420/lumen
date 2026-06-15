@@ -92,9 +92,14 @@ export function CatalogBrowser<T extends Sortable>({
         <p className="px-8 py-24 text-center text-sm text-fog-500">{emptyLabel}</p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3 px-5 py-5 sm:grid-cols-4 sm:px-8 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-            {filtered.slice(0, visible).map((item) => (
-              <PosterCard key={String(toPoster(item).id)} item={toPoster(item)} href={hrefFor(item)} />
+          <div className="grid grid-cols-2 gap-4 px-5 py-6 sm:grid-cols-3 sm:px-8 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {filtered.slice(0, visible).map((item, i) => (
+              <PosterCard
+                key={String(toPoster(item).id)}
+                item={toPoster(item)}
+                href={hrefFor(item)}
+                index={i % PAGE}
+              />
             ))}
           </div>
           {visible < filtered.length && <div ref={sentinel} className="h-10" />}

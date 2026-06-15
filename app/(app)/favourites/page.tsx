@@ -50,7 +50,7 @@ function Section({ title, count, children }: { title: string; count: number; chi
   return (
     <section>
       <h2 className="mb-3 px-5 text-lg font-semibold sm:px-8">{title}</h2>
-      <div className="grid grid-cols-3 gap-3 px-5 sm:grid-cols-4 sm:px-8 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-4 px-5 sm:grid-cols-3 sm:px-8 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {children}
       </div>
     </section>

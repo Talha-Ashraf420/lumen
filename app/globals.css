@@ -130,6 +130,12 @@ body {
 }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-in { animation: card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* drifting aurora blobs */
 @keyframes drift-a {
   0%, 100% { transform: translate(0, 0) scale(1); }

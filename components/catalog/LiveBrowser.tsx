@@ -48,22 +48,22 @@ export function LiveBrowser() {
 
   return (
     <div className="flex flex-col">
-      <div className="relative">
-        <FilterBar
-          categories={cats}
-          activeCategory={category}
-          onCategory={setCategory}
-          sort={sort}
-          onSort={setSort}
-          query={query}
-          onQuery={setQuery}
-          count={filtered.length}
-        />
-        <div className="absolute right-5 top-3 z-20 hidden items-center gap-1 rounded-full border border-white/8 bg-ink-850 p-1 sm:right-8 sm:flex">
-          <ViewBtn active={view === "grid"} onClick={() => setView("grid")}><LayoutGrid className="h-4 w-4" /></ViewBtn>
-          <ViewBtn active={view === "list"} onClick={() => setView("list")}><List className="h-4 w-4" /></ViewBtn>
-        </div>
-      </div>
+      <FilterBar
+        categories={cats}
+        activeCategory={category}
+        onCategory={setCategory}
+        sort={sort}
+        onSort={setSort}
+        query={query}
+        onQuery={setQuery}
+        count={filtered.length}
+        trailing={
+          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-ink-850/80 p-1">
+            <ViewBtn active={view === "grid"} onClick={() => setView("grid")}><LayoutGrid className="h-4 w-4" /></ViewBtn>
+            <ViewBtn active={view === "list"} onClick={() => setView("list")}><List className="h-4 w-4" /></ViewBtn>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <div className="py-5"><PosterGridSkeleton /></div>

@@ -20,58 +20,74 @@ export function PosterCard({
   item,
   href,
   className,
+  index = 0,
 }: {
   item: PosterItem;
   href: string;
   className?: string;
+  index?: number;
 }) {
   const rating = ratingNum(item.rating);
   const year = item.year || yearFrom(item.name);
+  const meta = item.subtitle || year;
 
   return (
-    <Link href={href} className={cn("tilt-scene group block focus:outline-none", className)}>
+    <Link
+      href={href}
+      className={cn("tilt-scene card-in group block focus:outline-none", className)}
+      style={{ animationDelay: `${Math.min(index, 14) * 0.035}s` }}
+    >
       <Tilt
-        tiltMaxAngleX={8}
-        tiltMaxAngleY={8}
-        scale={1.05}
+        tiltMaxAngleX={9}
+        tiltMaxAngleY={9}
+        scale={1.06}
         transitionSpeed={500}
         glareEnable
-        glareMaxOpacity={0.18}
+        glareMaxOpacity={0.22}
         glareColor="#A6B0FF"
         glarePosition="all"
-        glareBorderRadius="14px"
-        className="relative overflow-hidden rounded-[--radius-card] bg-ink-850 shadow-lg shadow-black/40 ring-1 ring-white/5 transition-shadow duration-300 group-hover:shadow-2xl group-hover:shadow-iris-400/20 group-focus-visible:focus-ring"
+        glareBorderRadius="16px"
+        className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-ink-850 ring-1 ring-white/8 shadow-lg shadow-black/40 transition-shadow duration-300 group-hover:shadow-2xl group-hover:shadow-iris-400/25 group-hover:ring-iris-400/40 group-focus-visible:focus-ring"
       >
-        <div className="relative aspect-[2/3] w-full overflow-hidden">
-          <SmartImage src={item.poster} alt={item.name} rounded="rounded-none" className="h-full w-full" />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/10 to-transparent opacity-80" />
+        <SmartImage
+          src={item.poster}
+          alt={item.name}
+          rounded="rounded-none"
+          className="h-full w-full transition-transform duration-700 group-hover:scale-105"
+        />
 
-          {rating > 0 && (
-            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-ink-950/70 px-1.5 py-0.5 text-[11px] font-semibold text-iris-300 backdrop-blur">
-              <Star className="h-3 w-3 fill-iris-300" /> {rating.toFixed(1)}
-            </span>
-          )}
+        {/* base scrim for legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/15 to-transparent" />
+        {/* hover wash */}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink-950/90 via-ink-950/20 to-iris-400/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-          <span
-            className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            style={{ transform: "translateZ(40px)" }}
-          >
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-iris-400 text-ink-950 shadow-lg shadow-iris-400/40">
-              <Play className="h-5 w-5 translate-x-0.5 fill-ink-950" />
-            </span>
+        {rating > 0 && (
+          <span className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-lg bg-ink-950/55 px-1.5 py-0.5 text-[11px] font-semibold text-mint-300 backdrop-blur-md ring-1 ring-white/10">
+            <Star className="h-3 w-3 fill-mint-300" /> {rating.toFixed(1)}
           </span>
+        )}
 
-          {item.progress !== undefined && item.progress > 0 && (
-            <span className="absolute inset-x-0 bottom-0 h-1 bg-ink-950/60">
-              <span className="block h-full bg-iris-400" style={{ width: `${Math.min(100, item.progress * 100)}%` }} />
-            </span>
-          )}
+        {/* play pill on hover */}
+        <span
+          className="absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full glass-bright opacity-0 transition-all duration-300 group-hover:opacity-100"
+          style={{ transform: "translate(-50%, -50%) translateZ(50px)" }}
+        >
+          <Play className="h-6 w-6 translate-x-0.5 fill-iris-300 text-iris-300" />
+        </span>
+
+        {/* title overlay */}
+        <div className="absolute inset-x-0 bottom-0 p-3" style={{ transform: "translateZ(30px)" }}>
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground drop-shadow">
+            {cleanName(item.name)}
+          </p>
+          {meta && <p className="mt-0.5 truncate text-[11px] text-fog-400">{meta}</p>}
         </div>
 
-        <div className="px-2.5 pb-3 pt-2">
-          <p className="truncate text-sm font-medium text-foreground">{cleanName(item.name)}</p>
-          <p className="truncate text-xs text-fog-500">{item.subtitle || year || " "}</p>
-        </div>
+        {item.progress !== undefined && item.progress > 0 && (
+          <span className="absolute inset-x-0 bottom-0 h-1 bg-ink-950/60">
+            <span className="block h-full bg-iris-400" style={{ width: `${Math.min(100, item.progress * 100)}%` }} />
+          </span>
+        )}
       </Tilt>
     </Link>
   );
