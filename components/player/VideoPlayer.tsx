@@ -162,11 +162,7 @@ export function VideoPlayer({
     };
     const onEnd = () => onEnded?.();
     const onErr = () =>
-      tryFallback(
-        `This stream couldn't be played in the browser${
-          /mkv|avi|wmv/i.test(ext) ? ` (.${ext} often needs VLC).` : "."
-        }`,
-      );
+      tryFallback("This title isn’t available from your provider right now, or can’t be played in the browser. Try another title.");
 
     v.addEventListener("play", onPlay);
     v.addEventListener("pause", onPause);

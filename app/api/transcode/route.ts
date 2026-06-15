@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { requireSession } from "@/lib/session";
-import { buildStreamUrl } from "@/lib/xtream/urls";
+import { locatePlayable } from "@/lib/xtream/locate";
 import type { StreamKind } from "@/lib/xtream/types";
 
 export const runtime = "nodejs";
@@ -31,7 +31,12 @@ export async function GET(req: Request) {
   const ext = searchParams.get("ext") || "mkv";
   if (!type || !id) return new Response("Bad request", { status: 400 });
 
-  const input = buildStreamUrl(creds, type, id, ext);
+  const located = await locatePlayable(creds, type, id, ext);
+  if (!located) {
+    console.log(`[TRANSCODE] ${type}/${id} UNAVAILABLE (no playable container)`);
+    return new Response("Title unavailable from provider", { status: 404 });
+  }
+  const input = located.url;
 
   const args = [
     "-hide_banner",

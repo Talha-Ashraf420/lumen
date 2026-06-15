@@ -1,5 +1,6 @@
 import { requireSession } from "@/lib/session";
 import { buildStreamUrl } from "@/lib/xtream/urls";
+import { locatePlayable } from "@/lib/xtream/locate";
 import type { StreamKind } from "@/lib/xtream/types";
 
 export const runtime = "nodejs";
@@ -31,7 +32,20 @@ export async function GET(req: Request) {
     return new Response("Bad stream request", { status: 400 });
   }
 
-  const upstreamUrl = buildStreamUrl(creds, type, id, ext);
+  // For VOD/series the catalog's extension is often wrong (provider returns an
+  // HTML error page). Find the real container; bail clearly if none is playable.
+  let upstreamUrl = buildStreamUrl(creds, type, id, ext);
+  if (type !== "live") {
+    const located = await locatePlayable(creds, type, id, ext);
+    if (!located) {
+      console.log(`[STREAM] ${type}/${id} UNAVAILABLE (no playable container)`);
+      return new Response("Title unavailable from provider", {
+        status: 404,
+        headers: { "x-lumen-unavailable": "1" },
+      });
+    }
+    upstreamUrl = located.url;
+  }
 
   const headers: Record<string, string> = { "User-Agent": UA, Accept: "*/*" };
   const range = req.headers.get("range");
