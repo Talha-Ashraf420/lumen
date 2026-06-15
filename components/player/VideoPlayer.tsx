@@ -74,14 +74,23 @@ export function VideoPlayer({
   const [trackList, setTrackList] = useState<Array<{ index: number; label: string }>>([]);
   const [activeTrack, setActiveTrack] = useState<number>(-1); // -1 = off
 
-  const src = sources[srcIdx] ?? sources[0];
-  // Remuxed (ffmpeg) streams are fragmented & non-seekable and report no duration.
-  const isTranscode = !!src && src.includes("/api/transcode");
-  const seekable = !isLive && !isTranscode;
-  const total = isTranscode && knownDuration > 0 ? knownDuration : duration;
+  // pseudo-seek for remuxed streams: reload ffmpeg from an offset
+  const [seekBase, setSeekBase] = useState(0);
+  const [scrub, setScrub] = useState<number | null>(null);
 
-  // reset to the preferred source whenever the candidate list changes
-  useEffect(() => setSrcIdx(0), [sources]);
+  const rawSrc = sources[srcIdx] ?? sources[0];
+  const isTranscode = !!rawSrc && rawSrc.includes("/api/transcode");
+  // appending &t= makes the attach effect reload ffmpeg from that timestamp
+  const src = isTranscode && seekBase > 0 ? `${rawSrc}&t=${Math.floor(seekBase)}` : rawSrc;
+  const seekable = !isLive; // transcoded streams seek by reloading
+  const total = isTranscode && knownDuration > 0 ? knownDuration : duration;
+  const displayCurrent = isTranscode ? seekBase + current : current;
+
+  // reset to the preferred source whenever the candidate list (title) changes
+  useEffect(() => {
+    setSrcIdx(0);
+    setSeekBase(0);
+  }, [sources]);
 
   const tryFallback = useCallback(
     (msg: string) => {
@@ -147,15 +156,17 @@ export function VideoPlayer({
     const onPlaying = () => setBuffering(false);
     const onLoaded = () => {
       setDuration(v.duration || 0);
-      if (!isLive && startTime > 0 && startTime < (v.duration || Infinity)) v.currentTime = startTime;
+      // native VOD resumes via currentTime; transcoded streams resume via ?t= reload
+      if (!isLive && !isTranscode && startTime > 0 && startTime < (v.duration || Infinity)) {
+        v.currentTime = startTime;
+      }
     };
     const onTime = () => {
       setCurrent(v.currentTime);
       setDuration(v.duration || 0);
-      // remuxed streams report a growing fake duration — report the real runtime
-      // for progress, and skip if we don't know it (avoids bad continue-watching).
+      // remuxed streams report a growing fake duration — report real runtime + offset.
       if (isTranscode) {
-        if (knownDuration > 0) onProgress?.(v.currentTime, knownDuration);
+        if (knownDuration > 0) onProgress?.(seekBase + v.currentTime, knownDuration);
       } else {
         onProgress?.(v.currentTime, v.duration || 0);
       }
@@ -182,7 +193,7 @@ export function VideoPlayer({
       v.removeEventListener("ended", onEnd);
       v.removeEventListener("error", onErr);
     };
-  }, [ext, isLive, startTime, onProgress, onEnded, tryFallback, isTranscode, knownDuration]);
+  }, [ext, isLive, startTime, onProgress, onEnded, tryFallback, isTranscode, knownDuration, seekBase]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -197,10 +208,21 @@ export function VideoPlayer({
     else v.pause();
   }, []);
 
-  const seek = useCallback((t: number) => {
-    const v = videoRef.current;
-    if (v && !isLive) v.currentTime = Math.max(0, Math.min(t, v.duration || 0));
-  }, [isLive]);
+  const seek = useCallback(
+    (t: number) => {
+      if (isLive) return;
+      const target = Math.max(0, Math.min(t, total || Infinity));
+      if (isTranscode) {
+        // restart ffmpeg from the new offset (the attach effect reloads on src change)
+        setCurrent(0);
+        setSeekBase(target);
+      } else {
+        const v = videoRef.current;
+        if (v) v.currentTime = target;
+      }
+    },
+    [isLive, isTranscode, total],
+  );
 
   const toggleMute = useCallback(() => {
     const v = videoRef.current;
@@ -310,8 +332,8 @@ export function VideoPlayer({
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
       switch (e.key) {
         case " ": e.preventDefault(); togglePlay(); break;
-        case "ArrowRight": if (seekable) seek(current + 10); break;
-        case "ArrowLeft": if (seekable) seek(current - 10); break;
+        case "ArrowRight": if (seekable) seek(displayCurrent + 10); break;
+        case "ArrowLeft": if (seekable) seek(displayCurrent - 10); break;
         case "ArrowUp": changeVolume(Math.min(1, volume + 0.1)); break;
         case "ArrowDown": changeVolume(Math.max(0, volume - 0.1)); break;
         case "f": toggleFs(); break;
@@ -326,7 +348,7 @@ export function VideoPlayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [current, volume, seekable, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, trackList, activeTrack, selectTrack, hasNext, onNext]);
+  }, [displayCurrent, volume, seekable, togglePlay, seek, toggleFs, toggleMute, onBack, showControls, trackList, activeTrack, selectTrack, hasNext, onNext]);
 
   return (
     <div
@@ -418,25 +440,26 @@ export function VideoPlayer({
           controlsOn ? "opacity-100" : "opacity-0",
         )}
       >
-        {/* seek bar (VOD) — read-only for remuxed streams (can't scrub a pipe) */}
+        {/* seek bar (VOD) */}
         {!isLive && (
           <div className="mb-3 flex items-center gap-3 text-xs tabular-nums text-fog-300">
-            <span className="w-12 text-right">{formatTime(current)}</span>
+            <span className="w-12 text-right">{formatTime(scrub ?? displayCurrent)}</span>
             <input
               type="range"
               min={0}
               max={total || 0}
               step={1}
-              value={current}
-              disabled={!seekable}
-              onChange={(e) => seekable && seek(Number(e.target.value))}
-              className={cn(
-                "h-1.5 flex-1 appearance-none rounded-full bg-white/20 accent-iris-400 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-iris-400",
-                seekable ? "cursor-pointer" : "cursor-default [&::-webkit-slider-thumb]:hidden",
-              )}
+              value={scrub ?? displayCurrent}
+              disabled={!seekable || !total}
+              onInput={(e) => setScrub(Number((e.target as HTMLInputElement).value))}
+              onChange={(e) => {
+                seek(Number(e.target.value));
+                setScrub(null);
+              }}
+              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-iris-400 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-iris-400"
               style={{
                 background: `linear-gradient(to right, var(--color-iris-400) ${
-                  total ? (current / total) * 100 : 0
+                  total ? ((scrub ?? displayCurrent) / total) * 100 : 0
                 }%, rgba(255,255,255,0.2) 0%)`,
               }}
             />
@@ -451,11 +474,11 @@ export function VideoPlayer({
 
           {seekable && (
             <>
-              <button onClick={() => seek(current - 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Back 10s (←)">
+              <button onClick={() => seek(displayCurrent - 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Back 10s (←)">
                 <RotateCcw className="h-6 w-6" />
                 <span className="absolute inset-0 grid place-items-center text-[8px] font-bold">10</span>
               </button>
-              <button onClick={() => seek(current + 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Forward 10s (→)">
+              <button onClick={() => seek(displayCurrent + 10)} className="relative text-white/90 transition-transform hover:scale-110" title="Forward 10s (→)">
                 <RotateCw className="h-6 w-6" />
                 <span className="absolute inset-0 grid place-items-center text-[8px] font-bold">10</span>
               </button>

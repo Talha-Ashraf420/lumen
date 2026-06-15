@@ -29,6 +29,7 @@ export async function GET(req: Request) {
   const type = searchParams.get("type") as StreamKind | null;
   const id = searchParams.get("id");
   const ext = searchParams.get("ext") || "mkv";
+  const start = Math.max(0, Math.floor(Number(searchParams.get("t") || 0)));
   if (!type || !id) return new Response("Bad request", { status: 400 });
 
   const located = await locatePlayable(creds, type, id, ext);
@@ -42,6 +43,8 @@ export async function GET(req: Request) {
     "-hide_banner",
     "-loglevel", "error",
     "-user_agent", UA,
+    // input seeking (fast) — pseudo-seek: client reloads with ?t=<sec> to scrub
+    ...(start > 0 ? ["-ss", String(start)] : []),
     "-i", input,
     "-c:v", "copy", // remux video (no re-encode) — fast, low CPU
     "-c:a", "aac", // normalize audio to a browser-friendly codec
@@ -51,7 +54,7 @@ export async function GET(req: Request) {
     "pipe:1",
   ];
 
-  console.log(`[TRANSCODE] ${type}/${id} ext=${ext} — remuxing via ffmpeg`);
+  console.log(`[TRANSCODE] ${type}/${id} ext=${ext} t=${start} — remuxing via ffmpeg`);
   const ff = spawn(FFMPEG, args, { stdio: ["ignore", "pipe", "pipe"] });
 
   ff.stderr.on("data", (d) => {
