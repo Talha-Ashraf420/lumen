@@ -109,12 +109,26 @@ export function VideoPlayer({
       }
     })();
 
+    // Stall watchdog: if a backup source exists and playback hasn't begun within
+    // a few seconds (e.g. provider blocks direct browser access), switch early
+    // instead of waiting ~30s for the browser to time out.
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    if (srcIdx < sources.length - 1) {
+      watchdog = setTimeout(() => {
+        const v = videoRef.current;
+        if (!cancelled && v && v.readyState < 3) {
+          tryFallback("Stream was slow to start — switching to backup source.");
+        }
+      }, 8000);
+    }
+
     return () => {
       cancelled = true;
+      if (watchdog) clearTimeout(watchdog);
       engineRef.current?.destroy();
       engineRef.current = null;
     };
-  }, [src, ext, isLive, tryFallback]);
+  }, [src, ext, isLive, tryFallback, srcIdx, sources.length]);
 
   // media element events
   useEffect(() => {

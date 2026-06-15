@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import Tilt from "react-parallax-tilt";
+import { useQueryClient } from "@tanstack/react-query";
 import { Play, Star } from "lucide-react";
 import { SmartImage } from "@/components/ui/SmartImage";
+import { api } from "@/lib/api";
 import { cleanName, ratingNum, yearFrom, cn } from "@/lib/utils";
 
 export interface PosterItem {
@@ -30,10 +32,24 @@ export function PosterCard({
   const rating = ratingNum(item.rating);
   const year = item.year || yearFrom(item.name);
   const meta = item.subtitle || year;
+  const qc = useQueryClient();
+
+  // Warm the detail data on hover so the page is instant when clicked.
+  const prefetch = () => {
+    const movie = href.match(/^\/movies\/(\d+)/);
+    const series = href.match(/^\/series\/(\d+)/);
+    if (movie) {
+      qc.prefetchQuery({ queryKey: ["vod", "info", movie[1]], queryFn: () => api.vodInfo(movie[1]) });
+    } else if (series) {
+      qc.prefetchQuery({ queryKey: ["series", "info", series[1]], queryFn: () => api.seriesInfo(series[1]) });
+    }
+  };
 
   return (
     <Link
       href={href}
+      onMouseEnter={prefetch}
+      onFocus={prefetch}
       className={cn("tilt-scene card-in group block focus:outline-none", className)}
       style={{ animationDelay: `${Math.min(index, 14) * 0.035}s` }}
     >
