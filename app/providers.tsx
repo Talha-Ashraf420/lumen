@@ -27,8 +27,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [persister, setPersister] = useState<ReturnType<typeof createSyncStoragePersister> | null>(null);
 
   useEffect(() => {
-    setPersister(createSyncStoragePersister({ storage: window.localStorage, key: "lumen-query-cache" }));
+    setPersister(
+      createSyncStoragePersister({
+        storage: window.localStorage,
+        key: "lumen-query-cache",
+        throttleTime: 2000, // don't serialize on every cache mutation
+      }),
+    );
   }, []);
+
+  // Only persist small/stable catalog data. The full "all" lists are huge and the
+  // per-title detail/probe queries are numerous — persisting them janks every nav.
+  const shouldDehydrateQuery = (query: { state: { status: string }; queryKey: readonly unknown[] }) => {
+    if (query.state.status !== "success") return false;
+    const [a, b, c] = query.queryKey as string[];
+    if (b === "cats") return true; // category lists (small)
+    if ((a === "vod" && b === "streams") || (a === "series" && b === "list") || (a === "live" && b === "streams")) {
+      return c !== "all"; // keep per-category lists, skip the giant full-catalog ones
+    }
+    return false; // skip vod_info, series_info, resolve, epg, session…
+  };
 
   // Same client instance throughout — once the persister is ready (client-only),
   // swap to the persisting provider to restore/save the cache to localStorage.
@@ -36,7 +54,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return (
       <PersistQueryClientProvider
         client={client}
-        persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000, buster: "v1" }}
+        persistOptions={{
+          persister,
+          maxAge: 24 * 60 * 60 * 1000,
+          buster: "v2",
+          dehydrateOptions: { shouldDehydrateQuery },
+        }}
       >
         {children}
       </PersistQueryClientProvider>

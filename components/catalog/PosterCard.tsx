@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import Tilt from "react-parallax-tilt";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,23 +34,32 @@ export function PosterCard({
   const year = item.year || yearFrom(item.name);
   const meta = item.subtitle || year;
   const qc = useQueryClient();
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Warm the detail data on hover so the page is instant when clicked.
-  const prefetch = () => {
-    const movie = href.match(/^\/movies\/(\d+)/);
-    const series = href.match(/^\/series\/(\d+)/);
-    if (movie) {
-      qc.prefetchQuery({ queryKey: ["vod", "info", movie[1]], queryFn: () => api.vodInfo(movie[1]) });
-    } else if (series) {
-      qc.prefetchQuery({ queryKey: ["series", "info", series[1]], queryFn: () => api.seriesInfo(series[1]) });
-    }
+  // Warm detail data only after a brief hover (avoids hammering the provider on
+  // quick mouse passes); cancelled on mouse-leave.
+  const startPrefetch = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => {
+      const movie = href.match(/^\/movies\/(\d+)/);
+      const series = href.match(/^\/series\/(\d+)/);
+      if (movie) {
+        qc.prefetchQuery({ queryKey: ["vod", "info", movie[1]], queryFn: () => api.vodInfo(movie[1]) });
+      } else if (series) {
+        qc.prefetchQuery({ queryKey: ["series", "info", series[1]], queryFn: () => api.seriesInfo(series[1]) });
+      }
+    }, 220);
+  };
+  const cancelPrefetch = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
   };
 
   return (
     <Link
       href={href}
-      onMouseEnter={prefetch}
-      onFocus={prefetch}
+      onMouseEnter={startPrefetch}
+      onMouseLeave={cancelPrefetch}
+      onFocus={startPrefetch}
       className={cn("tilt-scene card-in group block focus:outline-none", className)}
       style={{ animationDelay: `${Math.min(index, 14) * 0.035}s` }}
     >
