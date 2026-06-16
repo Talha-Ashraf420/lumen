@@ -7,6 +7,22 @@ export const dynamic = "force-dynamic";
 
 const UA = "VLC/3.0.20 LibVLC/3.0.20";
 
+/** Allow only public http(s) URLs (basic SSRF guard for the free-TV ?u= path). */
+function isPublicHttpUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (!/^https?:$/.test(url.protocol)) return false;
+  const h = url.hostname;
+  if (h === "localhost" || h.endsWith(".local") || h === "::1") return false;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.)/.test(h)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
+  return true;
+}
+
 /**
  * HLS playlist proxy for smooth live TV. Fetches the provider's .m3u8 and
  * rewrites every segment / sub-playlist / key URL to flow back through our proxy
@@ -25,8 +41,17 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("t");
   const id = searchParams.get("id");
+  const u = searchParams.get("u"); // arbitrary public m3u8 (free TV)
 
-  const playlistUrl = token ? getUrl(token) : id ? buildStreamUrl(creds, "live", id, "m3u8") : null;
+  const playlistUrl = token
+    ? getUrl(token)
+    : u
+      ? isPublicHttpUrl(u)
+        ? u
+        : null
+      : id
+        ? buildStreamUrl(creds, "live", id, "m3u8")
+        : null;
   if (!playlistUrl) return new Response("Bad HLS request", { status: 400 });
 
   let res: Response;

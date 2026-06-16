@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { VideoPlayer } from "@/components/player/VideoPlayer";
-import { streamSrc, resolveSrc, transcodeSrc, api } from "@/lib/api";
+import { streamSrc, resolveSrc, transcodeSrc, freeTvSrc, api } from "@/lib/api";
 import { useSeriesInfo } from "@/lib/hooks";
 import { useLibrary } from "@/store/library";
 import { parseDurationToSeconds } from "@/lib/utils";
@@ -16,13 +16,14 @@ function WatchInner() {
   const router = useRouter();
   const { saveProgress, pushRecentLive } = useLibrary();
 
-  const type = (params.get("type") as StreamKind) || "movie";
+  const type = (params.get("type") as StreamKind | "freetv") || "movie";
   const id = params.get("id") || "";
   const ext = params.get("ext") || (type === "live" ? "ts" : "mp4");
   const title = params.get("title") || "Now Playing";
   const resume = Number(params.get("resume") || 0);
   const seriesId = params.get("series") || undefined;
-  const isLive = type === "live";
+  const freeUrl = params.get("url") || ""; // free-TV public m3u8
+  const isLive = type === "live" || type === "freetv";
 
   // ordered episode list for next-episode (series only)
   const { data: seriesInfo } = useSeriesInfo(type === "series" ? seriesId : undefined);
@@ -60,26 +61,32 @@ function WatchInner() {
 
   // VOD plays directly from the provider when that's viable (fast); otherwise
   // we go straight to the proxy. Live always uses the proxy (MSE/CORS).
+  const mediaKind = (type === "freetv" ? "live" : type) as StreamKind;
+
+  // VOD plays directly from the provider when that's viable (fast); otherwise
+  // we go straight to the proxy. Live always uses the proxy (MSE/CORS).
   const { data: resolved, isLoading: resolving } = useQuery({
     queryKey: ["resolve", type, id, ext],
-    queryFn: () => resolveSrc(type, id, ext),
+    queryFn: () => resolveSrc(mediaKind, id, ext),
     enabled: !isLive && !!id,
     staleTime: 5 * 60 * 1000,
   });
 
   const sources = useMemo(() => {
-    const proxy = streamSrc(type, id, ext);
+    // Free TV: a public m3u8 played straight through the HLS proxy.
+    if (type === "freetv") return freeUrl ? [freeTvSrc(freeUrl)] : [];
+    const proxy = streamSrc(mediaKind, id, ext);
     // Live: HLS first (smooth, self-healing, adaptive) → raw MPEG-TS proxy fallback.
     if (isLive) return [`/api/hls?id=${id}`, proxy];
     // VOD chain: [direct (only if the probe says browsers are allowed)] → proxy →
     // ffmpeg remux (handles MKV/AVI the browser can't decode natively).
-    const transcode = transcodeSrc(type, id, ext);
+    const transcode = transcodeSrc(mediaKind, id, ext);
     return [...(resolved?.directOk && resolved.url ? [resolved.url] : []), proxy, transcode];
-  }, [isLive, type, id, ext, resolved]);
+  }, [isLive, type, mediaKind, id, ext, freeUrl, resolved]);
 
   // mark live channels recently-watched once
   const recentedRef = useRef(false);
-  if (isLive && !recentedRef.current && id) {
+  if (type === "live" && !recentedRef.current && id) {
     recentedRef.current = true;
     pushRecentLive(Number(id));
   }
@@ -92,8 +99,8 @@ function WatchInner() {
       if (now - lastSave.current < 5000) return;
       lastSave.current = now;
       saveProgress({
-        key: `${type}:${id}`,
-        kind: type,
+        key: `${mediaKind}:${id}`,
+        kind: mediaKind,
         id,
         seriesId,
         title,
@@ -104,7 +111,7 @@ function WatchInner() {
         updatedAt: now,
       });
     },
-    [isLive, type, id, seriesId, title, poster, ext, saveProgress],
+    [isLive, mediaKind, id, seriesId, title, poster, ext, saveProgress],
   );
 
   const goNext = useCallback(() => {
@@ -115,7 +122,7 @@ function WatchInner() {
     );
   }, [nextEp, seriesId, title, router]);
 
-  if (!id) {
+  if (!id && !freeUrl) {
     return (
       <div className="grid h-dvh place-items-center text-fog-500">
         Nothing to play. <button onClick={() => router.back()} className="ml-2 underline">Go back</button>

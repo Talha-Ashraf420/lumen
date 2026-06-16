@@ -72,7 +72,26 @@ export const api = {
   // epg (decoded)
   epg: (streamId: string | number, limit = 8) =>
     getJson<{ epg_listings: EpgListing[] }>(`/api/epg?stream_id=${streamId}&limit=${limit}`),
+
+  // free TV (public iptv-org lists)
+  freeTvCategories: () =>
+    getJson<{ categories: Array<{ id: string; name: string }> }>("/api/freetv?list=categories"),
+  freeTvChannels: (category: string) =>
+    getJson<{ channels: FreeChannel[] }>(`/api/freetv?category=${encodeURIComponent(category)}`),
 };
+
+export interface FreeChannel {
+  id: string;
+  name: string;
+  logo: string;
+  group: string;
+  url: string;
+}
+
+/** Same-origin HLS player URL for a public free-TV stream. */
+export function freeTvSrc(m3u8Url: string): string {
+  return `/api/hls?u=${encodeURIComponent(m3u8Url)}`;
+}
 
 /** Same-origin proxied media URL (used for live, and as a VOD fallback). */
 export function streamSrc(kind: StreamKind, id: string | number, ext = "ts"): string {
