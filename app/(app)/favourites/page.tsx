@@ -7,8 +7,9 @@ import { useLibrary } from "@/store/library";
 import { cleanName } from "@/lib/utils";
 
 export default function FavouritesPage() {
-  const { favourites } = useLibrary();
-  const empty = favourites.movie.length + favourites.series.length + favourites.live.length === 0;
+  const { favourites, freeFavourites } = useLibrary();
+  const empty =
+    favourites.movie.length + favourites.series.length + favourites.live.length + freeFavourites.length === 0;
 
   return (
     <>
@@ -36,6 +37,15 @@ export default function FavouritesPage() {
                 key={c.id}
                 href={`/watch?type=live&id=${c.id}&ext=ts&title=${encodeURIComponent(cleanName(c.name))}`}
                 item={{ id: c.id, name: c.name, poster: c.poster, subtitle: "Live" }}
+              />
+            ))}
+          </Section>
+          <Section title="Free Channels" count={freeFavourites.length}>
+            {freeFavourites.map((c) => (
+              <PosterCard
+                key={c.url}
+                href={`/watch?type=freetv&url=${encodeURIComponent(c.url)}&title=${encodeURIComponent(c.name)}`}
+                item={{ id: c.url, name: c.name, poster: c.logo, subtitle: "Free TV" }}
               />
             ))}
           </Section>

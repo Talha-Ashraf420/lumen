@@ -32,9 +32,16 @@ interface FavSets {
   series: FavItem[];
 }
 
+export interface FreeFavItem {
+  url: string;
+  name: string;
+  logo?: string;
+}
+
 interface LibraryState {
   profiles: Profile[];
   favourites: FavSets;
+  freeFavourites: FreeFavItem[];
   progress: Record<string, WatchProgress>;
   recentLive: number[];
 
@@ -43,6 +50,9 @@ interface LibraryState {
 
   toggleFav: (kind: keyof FavSets, item: FavItem) => void;
   isFav: (kind: keyof FavSets, id: number) => boolean;
+
+  toggleFreeFav: (item: FreeFavItem) => void;
+  isFreeFav: (url: string) => boolean;
 
   saveProgress: (p: WatchProgress) => void;
   clearProgress: (key: string) => void;
@@ -55,6 +65,7 @@ export const useLibrary = create<LibraryState>()(
     (set, get) => ({
       profiles: [],
       favourites: { live: [], movie: [], series: [] },
+      freeFavourites: [],
       progress: {},
       recentLive: [],
 
@@ -78,6 +89,17 @@ export const useLibrary = create<LibraryState>()(
         }),
       isFav: (kind, id) => get().favourites[kind].some((x) => x.id === id),
 
+      toggleFreeFav: (item) =>
+        set((s) => {
+          const has = s.freeFavourites.some((x) => x.url === item.url);
+          return {
+            freeFavourites: has
+              ? s.freeFavourites.filter((x) => x.url !== item.url)
+              : [item, ...s.freeFavourites],
+          };
+        }),
+      isFreeFav: (url) => get().freeFavourites.some((x) => x.url === url),
+
       saveProgress: (p) =>
         set((s) => {
           // drop near-finished items from continue-watching
@@ -100,13 +122,14 @@ export const useLibrary = create<LibraryState>()(
     }),
     {
       name: "lumen-library",
-      version: 2,
-      // v1 stored favourites as number[]; drop them so the new object shape is clean.
+      version: 3,
       migrate: (state: unknown, version: number) => {
         const s = state as LibraryState;
+        // v1 stored favourites as number[]; drop them so the new object shape is clean.
         if (version < 2 && s?.favourites) {
           s.favourites = { live: [], movie: [], series: [] };
         }
+        if (version < 3 && s && !s.freeFavourites) s.freeFavourites = [];
         return s;
       },
     },

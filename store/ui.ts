@@ -9,9 +9,18 @@ export interface SectionFilter {
   sort: SortKey;
   query: string;
   view: "grid" | "list";
+  mode: "cat" | "country"; // free-TV: browse by category or country
+  country: string; // free-TV: selected country code
 }
 
-export const DEFAULT_FILTER: SectionFilter = { category: "", sort: "added", query: "", view: "grid" };
+export const DEFAULT_FILTER: SectionFilter = {
+  category: "",
+  sort: "added",
+  query: "",
+  view: "grid",
+  mode: "cat",
+  country: "us",
+};
 
 interface UIState {
   /** keyed by section: "movies" | "series" | "live" */

@@ -3,33 +3,38 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Tv, Play, Radio } from "lucide-react";
+import { Tv, Play, Radio, Heart } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { PosterGridSkeleton } from "@/components/ui/Skeleton";
 import { CategoryPicker } from "@/components/catalog/CategoryPicker";
-import { api, freeTvSrc, type FreeChannel } from "@/lib/api";
+import { api, type FreeChannel } from "@/lib/api";
 import { useUI, DEFAULT_FILTER } from "@/store/ui";
+import { useLibrary } from "@/store/library";
 import { cn } from "@/lib/utils";
 
 const PAGE = 60;
 
 export default function FreeTvPage() {
-  const { data: catData } = useQuery({ queryKey: ["freetv", "cats"], queryFn: api.freeTvCategories });
-  const categories = useMemo(
-    () => (catData?.categories ?? []).map((c) => ({ category_id: c.id, category_name: c.name, parent_id: 0 })),
-    [catData],
-  );
-
   const filter = useUI((s) => s.filters.freetv ?? DEFAULT_FILTER);
   const patchFilter = useUI((s) => s.patchFilter);
-  const category = filter.category || "news";
+  const mode = filter.mode ?? "cat";
   const query = filter.query;
   const [visible, setVisible] = useState(PAGE);
 
+  const { data: catData } = useQuery({ queryKey: ["freetv", "cats"], queryFn: api.freeTvCategories });
+  const { data: countryData } = useQuery({ queryKey: ["freetv", "countries"], queryFn: api.freeTvCountries });
+
+  const pickerOptions = useMemo(() => {
+    const src = mode === "country" ? countryData?.countries : catData?.categories;
+    return (src ?? []).map((c) => ({ category_id: c.id, category_name: c.name, parent_id: 0 }));
+  }, [mode, catData, countryData]);
+
+  const value = mode === "country" ? filter.country || "us" : filter.category || "news";
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["freetv", "ch", category],
-    queryFn: () => api.freeTvChannels(category),
+    queryKey: ["freetv", "ch", mode, value],
+    queryFn: () => api.freeTvChannels(mode, value),
     staleTime: 30 * 60 * 1000,
   });
 
@@ -40,7 +45,7 @@ export default function FreeTvPage() {
     return ch;
   }, [data, query]);
 
-  useEffect(() => setVisible(PAGE), [category, query, data]);
+  useEffect(() => setVisible(PAGE), [mode, value, query, data]);
 
   const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -59,11 +64,18 @@ export default function FreeTvPage() {
       <TopBar title="Free TV" />
 
       <div className="flex flex-wrap items-center gap-2.5 border-b border-white/5 bg-ink-900/70 px-5 py-3 backdrop-blur-xl sm:px-8">
+        {/* category / country toggle */}
+        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-ink-850/80 p-1">
+          <ModeBtn active={mode === "cat"} onClick={() => patchFilter("freetv", { mode: "cat" })}>Categories</ModeBtn>
+          <ModeBtn active={mode === "country"} onClick={() => patchFilter("freetv", { mode: "country" })}>Countries</ModeBtn>
+        </div>
+
         <CategoryPicker
-          categories={categories}
-          value={category}
-          onChange={(id) => patchFilter("freetv", { category: id })}
+          categories={pickerOptions}
+          value={value}
+          onChange={(id) => patchFilter("freetv", mode === "country" ? { country: id } : { category: id })}
         />
+
         <div className="flex min-w-[180px] flex-1 items-center gap-2 rounded-full border border-white/10 bg-ink-850/80 px-3.5 py-2">
           <Radio className="h-4 w-4 shrink-0 text-fog-500" />
           <input
@@ -94,15 +106,44 @@ export default function FreeTvPage() {
   );
 }
 
-function FreeChannelTile({ channel }: { channel: FreeChannel }) {
-  const href = `/watch?type=freetv&url=${encodeURIComponent(channel.url)}&title=${encodeURIComponent(channel.name)}`;
+function ModeBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
+    <button
+      onClick={onClick}
       className={cn(
-        "group relative flex flex-col items-center gap-2.5 rounded-2xl border border-white/5 bg-ink-850 p-4 transition-all hover:-translate-y-0.5 hover:glow-iris",
+        "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+        active ? "bg-iris-400 text-ink-950" : "text-fog-400 hover:text-foreground",
       )}
     >
+      {children}
+    </button>
+  );
+}
+
+export function freeWatchHref(c: { url: string; name: string }) {
+  return `/watch?type=freetv&url=${encodeURIComponent(c.url)}&title=${encodeURIComponent(c.name)}`;
+}
+
+function FreeChannelTile({ channel }: { channel: FreeChannel }) {
+  const { isFreeFav, toggleFreeFav } = useLibrary();
+  const fav = isFreeFav(channel.url);
+  return (
+    <Link
+      href={freeWatchHref(channel)}
+      className="group relative flex flex-col items-center gap-2.5 rounded-2xl border border-white/5 bg-ink-850 p-4 transition-all hover:-translate-y-0.5 hover:glow-iris"
+    >
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          toggleFreeFav({ url: channel.url, name: channel.name, logo: channel.logo });
+        }}
+        className={cn(
+          "absolute right-2 top-2 z-10 grid h-7 w-7 place-items-center rounded-full bg-ink-950/60 transition-colors",
+          fav ? "text-iris-400" : "text-fog-500 opacity-0 group-hover:opacity-100 hover:text-foreground",
+        )}
+      >
+        <Heart className={cn("h-3.5 w-3.5", fav && "fill-iris-400")} />
+      </button>
       <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-xl bg-ink-900">
         {channel.logo ? (
           <SmartImage src={channel.logo} alt={channel.name} rounded="rounded-xl" className="h-16 w-16 object-contain" />

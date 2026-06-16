@@ -28,6 +28,38 @@ const CATEGORIES: Array<{ id: string; name: string }> = [
   { id: "animation", name: "Animation" },
 ];
 
+// Curated popular countries (iptv-org playlist codes, verified to exist).
+const COUNTRIES: Array<{ id: string; name: string }> = [
+  { id: "us", name: "🇺🇸 United States" },
+  { id: "uk", name: "🇬🇧 United Kingdom" },
+  { id: "ca", name: "🇨🇦 Canada" },
+  { id: "in", name: "🇮🇳 India" },
+  { id: "pk", name: "🇵🇰 Pakistan" },
+  { id: "ae", name: "🇦🇪 UAE" },
+  { id: "sa", name: "🇸🇦 Saudi Arabia" },
+  { id: "au", name: "🇦🇺 Australia" },
+  { id: "de", name: "🇩🇪 Germany" },
+  { id: "fr", name: "🇫🇷 France" },
+  { id: "es", name: "🇪🇸 Spain" },
+  { id: "it", name: "🇮🇹 Italy" },
+  { id: "tr", name: "🇹🇷 Turkey" },
+  { id: "br", name: "🇧🇷 Brazil" },
+  { id: "mx", name: "🇲🇽 Mexico" },
+  { id: "ru", name: "🇷🇺 Russia" },
+  { id: "cn", name: "🇨🇳 China" },
+  { id: "jp", name: "🇯🇵 Japan" },
+  { id: "kr", name: "🇰🇷 South Korea" },
+  { id: "ph", name: "🇵🇭 Philippines" },
+  { id: "id", name: "🇮🇩 Indonesia" },
+  { id: "ng", name: "🇳🇬 Nigeria" },
+  { id: "za", name: "🇿🇦 South Africa" },
+  { id: "eg", name: "🇪🇬 Egypt" },
+  { id: "nl", name: "🇳🇱 Netherlands" },
+  { id: "pl", name: "🇵🇱 Poland" },
+  { id: "gr", name: "🇬🇷 Greece" },
+  { id: "pt", name: "🇵🇹 Portugal" },
+];
+
 interface FreeChannel {
   id: string;
   name: string;
@@ -72,28 +104,40 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  if (searchParams.get("list") === "categories") {
-    return NextResponse.json({ categories: CATEGORIES });
-  }
+  const list = searchParams.get("list");
+  if (list === "categories") return NextResponse.json({ categories: CATEGORIES });
+  if (list === "countries") return NextResponse.json({ countries: COUNTRIES });
 
-  const category = searchParams.get("category") || "news";
-  if (!CATEGORIES.some((c) => c.id === category)) {
-    return NextResponse.json({ error: "Unknown category" }, { status: 400 });
+  const country = searchParams.get("country");
+  const category = searchParams.get("category");
+
+  let path: string;
+  let key: string;
+  if (country) {
+    if (!COUNTRIES.some((c) => c.id === country)) {
+      return NextResponse.json({ error: "Unknown country" }, { status: 400 });
+    }
+    path = `countries/${country}.m3u`;
+    key = `freetv|country|${country}`;
+  } else {
+    const cat = category || "news";
+    if (!CATEGORIES.some((c) => c.id === cat)) {
+      return NextResponse.json({ error: "Unknown category" }, { status: 400 });
+    }
+    path = `categories/${cat}.m3u`;
+    key = `freetv|cat|${cat}`;
   }
 
   try {
-    const channels = await cached(`freetv|${category}`, 6 * 60 * 60 * 1000, async () => {
-      const res = await fetch(`https://iptv-org.github.io/iptv/categories/${category}.m3u`, {
+    const channels = await cached(key, 6 * 60 * 60 * 1000, async () => {
+      const res = await fetch(`https://iptv-org.github.io/iptv/${path}`, {
         headers: { "User-Agent": "Lumen/1.0", Accept: "*/*" },
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) throw new Error(`iptv-org ${res.status}`);
       return parseM3U(await res.text());
     });
-    return NextResponse.json(
-      { channels },
-      { headers: { "Cache-Control": "private, max-age=1800" } },
-    );
+    return NextResponse.json({ channels }, { headers: { "Cache-Control": "private, max-age=1800" } });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });
   }

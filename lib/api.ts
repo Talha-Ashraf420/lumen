@@ -76,8 +76,12 @@ export const api = {
   // free TV (public iptv-org lists)
   freeTvCategories: () =>
     getJson<{ categories: Array<{ id: string; name: string }> }>("/api/freetv?list=categories"),
-  freeTvChannels: (category: string) =>
-    getJson<{ channels: FreeChannel[] }>(`/api/freetv?category=${encodeURIComponent(category)}`),
+  freeTvCountries: () =>
+    getJson<{ countries: Array<{ id: string; name: string }> }>("/api/freetv?list=countries"),
+  freeTvChannels: (mode: "cat" | "country", value: string) =>
+    getJson<{ channels: FreeChannel[] }>(
+      `/api/freetv?${mode === "country" ? "country" : "category"}=${encodeURIComponent(value)}`,
+    ),
 };
 
 export interface FreeChannel {
