@@ -139,7 +139,7 @@ export function VideoPlayer({
           setError("Couldn’t start this channel — it may be offline, geo-blocked, or not broadcasting right now. Try another.");
         }
       },
-      isLastSource ? 18000 : 12000,
+      isLastSource ? 30000 : 12000,
     );
 
     return () => {
@@ -157,7 +157,10 @@ export function VideoPlayer({
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
     const onWaiting = () => setBuffering(true);
-    const onPlaying = () => setBuffering(false);
+    const onPlaying = () => {
+      setBuffering(false);
+      setError(null); // recovered (e.g. slow start after the watchdog fired)
+    };
     const onLoaded = () => {
       setDuration(v.duration || 0);
       // native VOD resumes via currentTime; transcoded streams resume via ?t= reload
