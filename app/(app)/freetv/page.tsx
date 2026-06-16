@@ -63,7 +63,7 @@ export default function FreeTvPage() {
     <>
       <TopBar title="Free TV" />
 
-      <div className="flex flex-wrap items-center gap-2.5 border-b border-white/5 bg-ink-900/70 px-5 py-3 backdrop-blur-xl sm:px-8">
+      <div className="sticky top-[57px] z-20 flex flex-wrap items-center gap-2.5 border-b border-white/5 bg-ink-900/70 px-5 py-3 backdrop-blur-xl sm:px-8">
         {/* category / country toggle */}
         <div className="flex items-center gap-1 rounded-full border border-white/10 bg-ink-850/80 p-1">
           <ModeBtn active={mode === "cat"} onClick={() => patchFilter("freetv", { mode: "cat" })}>Categories</ModeBtn>
