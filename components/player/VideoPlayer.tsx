@@ -125,18 +125,22 @@ export function VideoPlayer({
       }
     })();
 
-    // Stall watchdog: if a backup source exists and playback hasn't begun within
-    // a few seconds (e.g. provider blocks direct browser access), switch early
-    // instead of waiting ~30s for the browser to time out.
-    let watchdog: ReturnType<typeof setTimeout> | null = null;
-    if (srcIdx < sources.length - 1) {
-      watchdog = setTimeout(() => {
+    // Startup watchdog: if playback hasn't begun in time, switch to a backup
+    // source — or, if this is the last/only source, surface a clear error instead
+    // of spinning forever (common for offline / [Not 24/7] / geo-blocked channels).
+    const isLastSource = srcIdx >= sources.length - 1;
+    const watchdog = setTimeout(
+      () => {
         const v = videoRef.current;
-        if (!cancelled && v && v.readyState < 3) {
+        if (cancelled || !v || v.readyState >= 3) return;
+        if (!isLastSource) {
           tryFallback("Stream was slow to start — switching to backup source.");
+        } else {
+          setError("Couldn’t start this channel — it may be offline, geo-blocked, or not broadcasting right now. Try another.");
         }
-      }, 12000);
-    }
+      },
+      isLastSource ? 18000 : 12000,
+    );
 
     return () => {
       cancelled = true;
