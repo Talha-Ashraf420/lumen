@@ -6,15 +6,17 @@ import { cached } from "@/lib/xtream/cache";
 export const runtime = "nodejs";
 
 // Per-action cache TTLs (ms). Catalogs change rarely; EPG is more volatile.
+const HOUR = 60 * 60 * 1000;
+// Catalogs change rarely; cache long + persist to disk so cold loads are paid once.
 const TTL: Record<string, number> = {
-  get_vod_streams: 15 * 60 * 1000,
-  get_series: 15 * 60 * 1000,
-  get_live_streams: 10 * 60 * 1000,
-  get_vod_categories: 30 * 60 * 1000,
-  get_series_categories: 30 * 60 * 1000,
-  get_live_categories: 30 * 60 * 1000,
-  get_vod_info: 30 * 60 * 1000,
-  get_series_info: 30 * 60 * 1000,
+  get_vod_streams: 3 * HOUR,
+  get_series: 3 * HOUR,
+  get_live_streams: 2 * HOUR,
+  get_vod_categories: 12 * HOUR,
+  get_series_categories: 12 * HOUR,
+  get_live_categories: 12 * HOUR,
+  get_vod_info: 6 * HOUR,
+  get_series_info: 6 * HOUR,
 };
 
 /**
